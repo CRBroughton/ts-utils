@@ -4,7 +4,7 @@ A collection of helper functions and types. To use any of the following,
 simply import into your project like so:
 
 ```typescript
-import { handleError, safeAwait } from '@crbroughton/ts-utils/await'
+import { handleError, safeAwait } from '@crbroughton/ts-utils'
 ```
 
 ## Installation
