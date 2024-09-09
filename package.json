@@ -1,0 +1,26 @@
+{
+  "name": "ts-utils",
+  "module": "index.ts",
+  "type": "module",
+  "scripts": {
+    "typecheck": "tsc --skipLibCheck --noEmit",
+    "build": "bun run typecheck && bun run build.ts",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "changeset": "npx changeset",
+    "changeset:status": "npx changeset status --verbose",
+    "changeset:version": "npx changeset version",
+    "publish": "bun run build && npm publish --access=public"
+  },
+  "peerDependencies": {
+    "typescript": "^5.0.0"
+  },
+  "devDependencies": {
+    "@antfu/eslint-config": "2.14.0",
+    "@changesets/cli": "^2.27.8",
+    "@crbroughton/ts-test-utils": "^0.6.2",
+    "@types/bun": "1.1.8",
+    "bun-plugin-dts": "0.2.3",
+    "eslint": "9.0.0"
+  }
+}
