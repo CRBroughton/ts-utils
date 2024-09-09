@@ -1,7 +1,7 @@
 {
   "name": "@crbroughton/ts-utils",
   "type": "module",
-  "version": "0.0.0",
+  "version": "0.0.3",
   "description": "A collection of helper functions and types",
   "author": "Craig R Broughton",
   "license": "MIT",
@@ -19,6 +19,7 @@
     "bun"
   ],
   "module": "index.ts",
+  "types": "dist/index.d.ts",
   "files": [
     "dist"
   ],
