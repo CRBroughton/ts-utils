@@ -1,8 +1,27 @@
 {
-  "name": "ts-utils",
+  "name": "@crbroughton/ts-utils",
   "type": "module",
   "version": "0.0.0",
+  "description": "A collection of helper functions and types",
+  "author": "Craig R Broughton",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/crbroughton/ts-test-utils.git"
+  },
+  "keywords": [
+    "typescript",
+    "types",
+    "enum",
+    "exceptions",
+    "async",
+    "utility",
+    "bun"
+  ],
   "module": "index.ts",
+  "files": [
+    "dist"
+  ],
   "scripts": {
     "typecheck": "tsc --skipLibCheck --noEmit",
     "build": "bun run typecheck && bun run build.ts",
