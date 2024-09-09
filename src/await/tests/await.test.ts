@@ -26,7 +26,7 @@ async function mightFail() {
 }
 
 async function run() {
-  const [result, error] = await safeAwait<'success', MightFailPossibleErrors>(mightFail)
+  const [result, error] = await safeAwait<Awaited<ReturnType<typeof mightFail>>, MightFailPossibleErrors>(mightFail)
 
   if (error) {
     const handlers = {

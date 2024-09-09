@@ -1,12 +1,12 @@
-export async function safeAwait<T, E = unknown>(
-  func: () => Promise<T>,
-): Promise<[T, null] | [null, E]> {
+export async function safeAwait<Success, Error = unknown>(
+  func: () => Promise<Success>,
+): Promise<[Success, null] | [null, Error]> {
   try {
     const result = await func()
     return [result, null]
   }
   catch (error) {
-    return [null, error as E]
+    return [null, error as Error]
   }
 }
 
