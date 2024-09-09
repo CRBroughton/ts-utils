@@ -7,7 +7,7 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/crbroughton/ts-test-utils.git"
+    "url": "git+https://github.com/crbroughton/ts-utils.git"
   },
   "keywords": [
     "typescript",
