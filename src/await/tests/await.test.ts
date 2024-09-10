@@ -1,3 +1,4 @@
+/* eslint-disable unused-imports/no-unused-vars */
 /* eslint-disable no-console */
 import { type Handlers, handleError, safeAwait } from '..'
 
@@ -26,7 +27,8 @@ async function mightFail() {
 }
 
 async function goExample() {
-  const [result, error] = await safeAwait<Awaited<ReturnType<typeof mightFail>>, MightFailPossibleErrors>(mightFail)
+  type SuccessType = Awaited<ReturnType<typeof mightFail>>
+  const [result, error] = await safeAwait<SuccessType, MightFailPossibleErrors>(mightFail)
 
   if (error) {
     const handlers = {
@@ -48,7 +50,8 @@ async function goExample() {
 }
 
 async function rustExample() {
-  const result = await safeAwait<Awaited<ReturnType<typeof mightFail>>, MightFailPossibleErrors>(mightFail, true)
+  type SuccessType = Awaited<ReturnType<typeof mightFail>>
+  const result = await safeAwait<SuccessType, MightFailPossibleErrors>(mightFail, true)
 
   if (!result.ok) {
     const handlers = {
