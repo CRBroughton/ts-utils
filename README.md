@@ -19,8 +19,8 @@ bun i -D @crbroughton/ts-utils
 
 The `await` directory contains the following:
 
-- `safeAwait` - This function return either a result or error value (think Go)
-- `handleError` - To be used in conjunction with `safeAwait`
+- `safeAwait` - This function return either a result or error value. This suppports both a Go and Rust like syntax, using overload functions.
+- `handleError` - To be used in conjunction with `safeAwait`.
 
 The goal of the `await` helpers is to make it more obvious where throw exceptions
 occur and to help guide the user to write exception handlers. Please inspect the [the accompanying test file](src/await/tests/await.test.ts) file to see both helpers in action.

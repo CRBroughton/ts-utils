@@ -1,12 +1,32 @@
+type GoResult<Success, Error = unknown> = [Success, null] | [null, Error]
+type RustResult<Success, Error = unknown> = { ok: true, value: Success } | { ok: false, error: Error }
+
+export function safeAwait<Success, Error = unknown>(
+  func: () => Promise<Success>,
+  rustStyle?: false
+): Promise<GoResult<Success, Error>>
+
+export function safeAwait<Success, Error = unknown>(
+  func: () => Promise<Success>,
+  rustStyle: true
+): Promise<RustResult<Success, Error>>
+
 export async function safeAwait<Success, Error = unknown>(
   func: () => Promise<Success>,
-): Promise<[Success, null] | [null, Error]> {
+  rustStyle: boolean = false,
+): Promise<GoResult<Success, Error> | RustResult<Success, Error>> {
   try {
     const result = await func()
-    return [result, null]
+    if (rustStyle)
+      return { ok: true, value: result }
+    else
+      return [result, null]
   }
   catch (error) {
-    return [null, error as Error]
+    if (rustStyle)
+      return { ok: false, error: error as Error }
+    else
+      return [null, error as Error]
   }
 }
 

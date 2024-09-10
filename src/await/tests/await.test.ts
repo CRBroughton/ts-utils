@@ -25,7 +25,7 @@ async function mightFail() {
   return 'success' as const
 }
 
-async function run() {
+async function goExample() {
   const [result, error] = await safeAwait<Awaited<ReturnType<typeof mightFail>>, MightFailPossibleErrors>(mightFail)
 
   if (error) {
@@ -46,4 +46,25 @@ async function run() {
   }
   return result
 }
-console.log(await run())
+
+async function rustExample() {
+  const result = await safeAwait<Awaited<ReturnType<typeof mightFail>>, MightFailPossibleErrors>(mightFail, true)
+
+  if (!result.ok) {
+    const handlers = {
+      FirstCustomError: (_err: FirstCustomError) => {
+        console.log('this is a void return')
+      },
+      SecondCustomError: (err: SecondCustomError) => {
+        return err
+      },
+      ThirdError: (err: ThirdError) => {
+        return err
+      },
+    } satisfies Handlers
+
+    const errorResult = handleError(handlers, result.error)
+    return errorResult
+  }
+  return result.value
+}
