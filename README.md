@@ -23,7 +23,7 @@ The `await` directory contains the following:
 - `handleError` - To be used in conjunction with `safeAwait`.
 
 The goal of the `await` helpers is to make it more obvious where throw exceptions
-occur and to help guide the user to write exception handlers. Please inspect the [the accompanying test file](src/await/tests/await.test.ts) file to see both helpers in action.
+occur and to help guide the user to write exception handlers. Please inspect the [the accompanying example file](src/await/await.example.ts) file to see both helpers in action.
 
 ## enum
 
