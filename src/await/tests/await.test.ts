@@ -1,73 +1,48 @@
-/* eslint-disable unused-imports/no-unused-vars */
-/* eslint-disable no-console */
-import { type Handlers, handleError, safeAwait } from '..'
+import { expect, test } from 'bun:test'
+import { safeAwait } from '..'
 
 class FirstCustomError extends Error {
   safeAwaitName = 'FirstCustomError' as const
 }
-class SecondCustomError extends Error {
-  safeAwaitName = 'SecondCustomError' as const
-}
-class ThirdError extends Error {
-  safeAwaitName = 'ThirdError' as const
-}
-
-type MightFailPossibleErrors = FirstCustomError | SecondCustomError | ThirdError
-async function mightFail() {
-  if (Math.random() > 0.2)
-    throw new FirstCustomError('value too high`')
-
-  if (Math.random() > 0.5)
-    throw new SecondCustomError('value even higher')
-
-  if (Math.random() > 0.7)
-    throw new ThirdError('ouch')
+async function mightFail(throwMaybe: boolean) {
+  if (throwMaybe === true)
+    throw new FirstCustomError('value too high')
 
   return 'success' as const
 }
 
-async function goExample() {
-  type SuccessType = Awaited<ReturnType<typeof mightFail>>
-  const [result, error] = await safeAwait<SuccessType, MightFailPossibleErrors>(mightFail)
+test('Go variant - returns a tuple containing a error value when thrown, and no result value', async () => {
+    type ResultType = Awaited<ReturnType<typeof mightFail>>
+    const [result, error] = await safeAwait<ResultType, FirstCustomError>(mightFail(true))
 
-  if (error) {
-    const handlers = {
-      FirstCustomError: (_err: FirstCustomError) => {
-        console.log('this is a void return')
-      },
-      SecondCustomError: (err: SecondCustomError) => {
-        return err
-      },
-      ThirdError: (err: ThirdError) => {
-        return err
-      },
-    } satisfies Handlers
+    expect(result).toStrictEqual(null)
+    expect(error && error.message).toStrictEqual('value too high')
+})
 
-    const errorResult = handleError(handlers, error)
-    return errorResult
-  }
-  return result
-}
+test('Go variant - returns a tuple containing no error value when not thrown, and a result value', async () => {
+    type ResultType = Awaited<ReturnType<typeof mightFail>>
+    const [result, error] = await safeAwait<ResultType, FirstCustomError>(mightFail(false))
 
-async function rustExample() {
-  type SuccessType = Awaited<ReturnType<typeof mightFail>>
-  const result = await safeAwait<SuccessType, MightFailPossibleErrors>(mightFail, true)
+    expect(result).toStrictEqual('success')
+    expect(error && error.message).toStrictEqual(null)
+})
 
-  if (!result.ok) {
-    const handlers = {
-      FirstCustomError: (_err: FirstCustomError) => {
-        console.log('this is a void return')
-      },
-      SecondCustomError: (err: SecondCustomError) => {
-        return err
-      },
-      ThirdError: (err: ThirdError) => {
-        return err
-      },
-    } satisfies Handlers
+test('Rust variant - returns a tuple containing a error value when thrown, and no result value', async () => {
+    type ResultType = Awaited<ReturnType<typeof mightFail>>
+    const result = await safeAwait<ResultType, FirstCustomError>(mightFail(true), true)
 
-    const errorResult = handleError(handlers, result.error)
-    return errorResult
-  }
-  return result.value
-}
+    expect(result.ok).toStrictEqual(false)
+
+    if (!result.ok)
+      expect(result.error && result.error.message).toStrictEqual('value too high')
+})
+
+test('Rust variant - returns a tuple containing no error value when not thrown, and a result value', async () => {
+    type ResultType = Awaited<ReturnType<typeof mightFail>>
+    const result = await safeAwait<ResultType, FirstCustomError>(mightFail(false), true)
+
+    expect(result.ok).toStrictEqual(true)
+
+    if (result.ok)
+      expect(result.value).toStrictEqual('success')
+})
