@@ -1,5 +1,5 @@
 import { expect, test } from 'bun:test'
-import { safeAwait } from '..'
+import { type Handlers, handleError, safeAwait } from '..'
 
 class FirstCustomError extends Error {
   safeAwaitName = 'FirstCustomError' as const
@@ -45,4 +45,36 @@ test('Rust variant - returns a tuple containing no error value when not thrown, 
 
     if (result.ok)
       expect(result.value).toStrictEqual('success')
+})
+
+test('Go variant - handleError returns the possible thrown error classes', async () => {
+  type ResultType = Awaited<ReturnType<typeof mightFail>>
+  const [_, error] = await safeAwait<ResultType, FirstCustomError>(mightFail(true))
+
+  if (error) {
+    const handlers = {
+      FirstCustomError: (err: FirstCustomError) => {
+        return err
+      },
+    } satisfies Handlers
+
+    const handlerErrors = handleError(handlers, error)
+    expect(handlerErrors.message).toStrictEqual('value too high')
+  }
+})
+
+test('Rust variant - handleError returns the possible thrown error classes', async () => {
+  type ResultType = Awaited<ReturnType<typeof mightFail>>
+  const result = await safeAwait<ResultType, FirstCustomError>(mightFail(true), true)
+
+  if (!result.ok) {
+    const handlers = {
+      FirstCustomError: (err: FirstCustomError) => {
+        return err
+      },
+    } satisfies Handlers
+
+    const handlerErrors = handleError(handlers, result.error)
+    expect(handlerErrors.message).toStrictEqual('value too high')
+  }
 })
