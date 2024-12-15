@@ -29,7 +29,7 @@ export function zodObjectBuilder<T extends ZodObject<any>>({
   overrides?: Partial<z.infer<T>>[]
   partial?: boolean
 }) {
-  const objects = [] as (typeof partial extends true ? Partial<z.infer<T>>[] : z.infer<T>[])
+  const objects: typeof partial extends true ? Partial<z.infer<T>>[] : z.infer<T>[] = []
   const base = partial
     ? schema.partial().parse({})
     : schema.parse({})
