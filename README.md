@@ -41,6 +41,15 @@ The `utils` directory for now only contains the `Prettify` type, which will
 improve your experience when hovering over type to get their underlying type
 information.
 
+## Zod
+
+The Zod directly currently contains only a single function, the `zodObjectBuilder` function, which is
+a helper to generate objects from a Zod object schema.
+Use this function for whenever you need to generate
+objects but don't want to see the entire object in
+your code. This function support both full and partial
+schema support.
+
 ## Development Installation
 
 ```bash
