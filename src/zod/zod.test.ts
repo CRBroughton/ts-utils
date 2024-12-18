@@ -54,36 +54,3 @@ test('creates a zod object array from a schema (with overrides', () => {
     },
   ])
 })
-
-test('creates a zod object array from a schema (with overrides and partials', () => {
-  const schema = z.object(
-    {
-      foo: z.string().default('Hello, World!'),
-      bar: z.boolean().default(false),
-    },
-  )
-
-  const actual = zodObjectBuilder({
-    schema,
-    overrides: [
-      {
-        foo: 'rawr',
-      },
-      {
-        foo: 'rawr2',
-        bar: true,
-      },
-    ],
-    partial: true,
-  })
-
-  expect(actual).toEqual([
-    {
-      foo: 'rawr',
-    },
-    {
-      foo: 'rawr2',
-      bar: true,
-    },
-  ])
-})

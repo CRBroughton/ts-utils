@@ -12,3 +12,7 @@ export {
 export {
   type Prettify,
 } from './src/utils'
+
+export {
+  zodObjectBuilder,
+} from './src/zod'
