@@ -45,6 +45,7 @@
     "@crbroughton/ts-test-utils": "^0.6.2",
     "@types/bun": "1.1.8",
     "bun-plugin-dts": "0.2.3",
-    "eslint": "9.0.0"
+    "eslint": "9.0.0",
+    "ts-deepmerge": "^7.0.2"
   }
 }
