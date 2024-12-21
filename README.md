@@ -48,8 +48,47 @@ a helper to generate objects from a Zod object schema.
 Use this function for whenever you need to generate
 objects but don't want to see the entire object in
 your code. This function support both full and partial
-schema support.
+schema support. Below is an example of `zodObjectBuilder` in action with it's various
+use-cases.
 
+``` typescript
+ * // Define a schema
+ * const UserSchema = z.object({
+ *   id: z.string(),
+ *   name: z.string(),
+ *   settings: z.object({
+ *     theme: z.enum(['light', 'dark']),
+ *     notifications: z.boolean()
+ *   })
+ * });
+ *
+ * // Create a single object with overrides
+ * const user = zodObjectBuilder({
+ *   schema: UserSchema,
+ *   overrides: { name: 'John', settings: { theme: 'dark' } }
+ * });
+ *
+ * // Create multiple objects with overrides
+ * const users = zodObjectBuilder({
+ *   schema: UserSchema,
+ *   overrides: [
+ *     { name: 'John' },
+ *     { name: 'Jane', settings: { theme: 'light' } }
+ *   ]
+ * });
+ *
+ * // Create default object(nested in an array) with no overrides
+ * const defaultUsers = zodObjectBuilder({
+ *   schema: UserSchema
+ * });
+ *
+ * // Preserve nested defaults with overrides
+ * const userWithDefaults = zodObjectBuilder({
+ *   schema: UserSchema,
+ *   overrides: { name: 'John', settings: { theme: 'dark' } },
+ *   config: { preserveNestedDefaults: true }
+ * });
+```
 ## Development Installation
 
 ```bash

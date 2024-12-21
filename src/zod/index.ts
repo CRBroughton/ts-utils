@@ -39,7 +39,7 @@ interface BaseConfig {
  *   overrides: { name: 'John', settings: { theme: 'dark' } }
  * });
  *
- * // Create multiple objects
+ * // Create multiple objects with overrides
  * const users = zodObjectBuilder({
  *   schema: UserSchema,
  *   overrides: [
@@ -48,15 +48,15 @@ interface BaseConfig {
  *   ]
  * });
  *
- * // Create default object with no overrides
+ * // Create default object(nested in an array) with no overrides
  * const defaultUsers = zodObjectBuilder({
  *   schema: UserSchema
  * });
  *
- * // Preserve nested defaults
+ * // Preserve nested defaults with overrides
  * const userWithDefaults = zodObjectBuilder({
  *   schema: UserSchema,
- *   overrides: { name: 'John' },
+ *   overrides: { name: 'John', settings: { theme: 'dark' } },
  *   config: { preserveNestedDefaults: true }
  * });
  */
@@ -96,7 +96,7 @@ export function zodObjectBuilder<T extends z.ZodObject<ZodRawShape>>(params: {
  *   overrides: { name: 'John', settings: { theme: 'dark' } }
  * });
  *
- * // Create multiple objects
+ * // Create multiple objects with overrides
  * const users = zodObjectBuilder({
  *   schema: UserSchema,
  *   overrides: [
@@ -105,15 +105,15 @@ export function zodObjectBuilder<T extends z.ZodObject<ZodRawShape>>(params: {
  *   ]
  * });
  *
- * // Create default object with no overrides
+ * // Create default object(nested in an array) with no overrides
  * const defaultUsers = zodObjectBuilder({
  *   schema: UserSchema
  * });
  *
- * // Preserve nested defaults
+ * // Preserve nested defaults with overrides
  * const userWithDefaults = zodObjectBuilder({
  *   schema: UserSchema,
- *   overrides: { name: 'John' },
+ *   overrides: { name: 'John', settings: { theme: 'dark' } },
  *   config: { preserveNestedDefaults: true }
  * });
  */
@@ -153,7 +153,7 @@ export function zodObjectBuilder<T extends z.ZodObject<ZodRawShape>>(params: {
  *   overrides: { name: 'John', settings: { theme: 'dark' } }
  * });
  *
- * // Create multiple objects
+ * // Create multiple objects with overrides
  * const users = zodObjectBuilder({
  *   schema: UserSchema,
  *   overrides: [
@@ -162,15 +162,15 @@ export function zodObjectBuilder<T extends z.ZodObject<ZodRawShape>>(params: {
  *   ]
  * });
  *
- * // Create default object with no overrides
+ * // Create default object(nested in an array) with no overrides
  * const defaultUsers = zodObjectBuilder({
  *   schema: UserSchema
  * });
  *
- * // Preserve nested defaults
+ * // Preserve nested defaults with overrides
  * const userWithDefaults = zodObjectBuilder({
  *   schema: UserSchema,
- *   overrides: { name: 'John' },
+ *   overrides: { name: 'John', settings: { theme: 'dark' } },
  *   config: { preserveNestedDefaults: true }
  * });
  */
@@ -209,7 +209,7 @@ export function zodObjectBuilder<T extends z.ZodObject<ZodRawShape>>(params: {
  *   overrides: { name: 'John', settings: { theme: 'dark' } }
  * });
  *
- * // Create multiple objects
+ * // Create multiple objects with overrides
  * const users = zodObjectBuilder({
  *   schema: UserSchema,
  *   overrides: [
@@ -218,15 +218,15 @@ export function zodObjectBuilder<T extends z.ZodObject<ZodRawShape>>(params: {
  *   ]
  * });
  *
- * // Create default object with no overrides
+ * // Create default object(nested in an array) with no overrides
  * const defaultUsers = zodObjectBuilder({
  *   schema: UserSchema
  * });
  *
- * // Preserve nested defaults
+ * // Preserve nested defaults with overrides
  * const userWithDefaults = zodObjectBuilder({
  *   schema: UserSchema,
- *   overrides: { name: 'John' },
+ *   overrides: { name: 'John', settings: { theme: 'dark' } },
  *   config: { preserveNestedDefaults: true }
  * });
  */
