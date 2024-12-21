@@ -22,6 +22,48 @@ describe('zodObjectBuilder', () => {
       },
     ])
   })
+  test('create a zod object object from a schema', () => {
+    const schema = z.object(
+      {
+        foo: z.string().default('Hello, World!'),
+        bar: z.boolean().default(false),
+      },
+    )
+
+    const actual = zodObjectBuilder({
+      schema,
+      override: {},
+    })
+
+    expect(actual).toStrictEqual(
+      {
+        foo: 'Hello, World!',
+        bar: false,
+      },
+    )
+  })
+  test('create a zod object object from a schema (with override)', () => {
+    const schema = z.object(
+      {
+        foo: z.string().default('Hello, World!'),
+        bar: z.boolean().default(false),
+      },
+    )
+
+    const actual = zodObjectBuilder({
+      schema,
+      override: {
+        bar: true,
+      },
+    })
+
+    expect(actual).toStrictEqual(
+      {
+        bar: true,
+        foo: 'Hello, World!',
+      },
+    )
+  })
   test('creates a zod object array from a schema (with overrides)', () => {
     const schema = z.object(
       {
