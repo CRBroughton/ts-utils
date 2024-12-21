@@ -9,21 +9,171 @@ interface BaseConfig {
   preserveNestedDefaults?: boolean
 }
 
-// Overload for single override - returns single object
+/**
+ * Creates objects from a Zod schema with optional overrides. This utility function helps generate
+ * test data or default objects while allowing partial overrides of specific fields.
+ *
+ * @param params Configuration object for the builder
+ * @param params.schema - Zod schema that defines the shape and validation rules for the objects
+ * @param params.overrides - Optional override values. Can be either a single partial object or an array of partial objects
+ * @param params.config - Optional configuration object
+ * @param params.config.preserveNestedDefaults - When true, preserves default values in nested objects when merging overrides
+ *
+ * @returns If overrides is an array, returns an array of objects. If overrides is a single object,
+ *          returns a single object. If no overrides provided, returns an array with one default object.
+ *
+ * @example
+ * // Define a schema
+ * const UserSchema = z.object({
+ *   id: z.string(),
+ *   name: z.string(),
+ *   settings: z.object({
+ *     theme: z.enum(['light', 'dark']),
+ *     notifications: z.boolean()
+ *   })
+ * });
+ *
+ * // Create a single object with overrides
+ * const user = zodObjectBuilder({
+ *   schema: UserSchema,
+ *   overrides: { name: 'John', settings: { theme: 'dark' } }
+ * });
+ *
+ * // Create multiple objects
+ * const users = zodObjectBuilder({
+ *   schema: UserSchema,
+ *   overrides: [
+ *     { name: 'John' },
+ *     { name: 'Jane', settings: { theme: 'light' } }
+ *   ]
+ * });
+ *
+ * // Create default object with no overrides
+ * const defaultUsers = zodObjectBuilder({
+ *   schema: UserSchema
+ * });
+ *
+ * // Preserve nested defaults
+ * const userWithDefaults = zodObjectBuilder({
+ *   schema: UserSchema,
+ *   overrides: { name: 'John' },
+ *   config: { preserveNestedDefaults: true }
+ * });
+ */
 export function zodObjectBuilder<T extends z.ZodObject<ZodRawShape>>(params: {
   schema: T
   overrides: DeepPartial<z.infer<T>>
   config?: BaseConfig
 }): z.infer<T>
 
-// Overload for array of overrides
+/**
+ * Creates objects from a Zod schema with optional overrides. This utility function helps generate
+ * test data or default objects while allowing partial overrides of specific fields.
+ *
+ * @param params Configuration object for the builder
+ * @param params.schema - Zod schema that defines the shape and validation rules for the objects
+ * @param params.overrides - Optional override values. Can be either a single partial object or an array of partial objects
+ * @param params.config - Optional configuration object
+ * @param params.config.preserveNestedDefaults - When true, preserves default values in nested objects when merging overrides
+ *
+ * @returns If overrides is an array, returns an array of objects. If overrides is a single object,
+ *          returns a single object. If no overrides provided, returns an array with one default object.
+ *
+ * @example
+ * // Define a schema
+ * const UserSchema = z.object({
+ *   id: z.string(),
+ *   name: z.string(),
+ *   settings: z.object({
+ *     theme: z.enum(['light', 'dark']),
+ *     notifications: z.boolean()
+ *   })
+ * });
+ *
+ * // Create a single object with overrides
+ * const user = zodObjectBuilder({
+ *   schema: UserSchema,
+ *   overrides: { name: 'John', settings: { theme: 'dark' } }
+ * });
+ *
+ * // Create multiple objects
+ * const users = zodObjectBuilder({
+ *   schema: UserSchema,
+ *   overrides: [
+ *     { name: 'John' },
+ *     { name: 'Jane', settings: { theme: 'light' } }
+ *   ]
+ * });
+ *
+ * // Create default object with no overrides
+ * const defaultUsers = zodObjectBuilder({
+ *   schema: UserSchema
+ * });
+ *
+ * // Preserve nested defaults
+ * const userWithDefaults = zodObjectBuilder({
+ *   schema: UserSchema,
+ *   overrides: { name: 'John' },
+ *   config: { preserveNestedDefaults: true }
+ * });
+ */
 export function zodObjectBuilder<T extends z.ZodObject<ZodRawShape>>(params: {
   schema: T
   overrides: DeepPartial<z.infer<T>>[]
   config?: BaseConfig
 }): z.infer<T>[]
 
-// Overload for no overrides
+/**
+ * Creates objects from a Zod schema with optional overrides. This utility function helps generate
+ * test data or default objects while allowing partial overrides of specific fields.
+ *
+ * @param params Configuration object for the builder
+ * @param params.schema - Zod schema that defines the shape and validation rules for the objects
+ * @param params.overrides - Optional override values. Can be either a single partial object or an array of partial objects
+ * @param params.config - Optional configuration object
+ * @param params.config.preserveNestedDefaults - When true, preserves default values in nested objects when merging overrides
+ *
+ * @returns If overrides is an array, returns an array of objects. If overrides is a single object,
+ *          returns a single object. If no overrides provided, returns an array with one default object.
+ *
+ * @example
+ * // Define a schema
+ * const UserSchema = z.object({
+ *   id: z.string(),
+ *   name: z.string(),
+ *   settings: z.object({
+ *     theme: z.enum(['light', 'dark']),
+ *     notifications: z.boolean()
+ *   })
+ * });
+ *
+ * // Create a single object with overrides
+ * const user = zodObjectBuilder({
+ *   schema: UserSchema,
+ *   overrides: { name: 'John', settings: { theme: 'dark' } }
+ * });
+ *
+ * // Create multiple objects
+ * const users = zodObjectBuilder({
+ *   schema: UserSchema,
+ *   overrides: [
+ *     { name: 'John' },
+ *     { name: 'Jane', settings: { theme: 'light' } }
+ *   ]
+ * });
+ *
+ * // Create default object with no overrides
+ * const defaultUsers = zodObjectBuilder({
+ *   schema: UserSchema
+ * });
+ *
+ * // Preserve nested defaults
+ * const userWithDefaults = zodObjectBuilder({
+ *   schema: UserSchema,
+ *   overrides: { name: 'John' },
+ *   config: { preserveNestedDefaults: true }
+ * });
+ */
 export function zodObjectBuilder<T extends z.ZodObject<ZodRawShape>>(params: {
   schema: T
   config?: BaseConfig
@@ -138,7 +288,7 @@ export function buildDefaultObject<T extends z.ZodObject<ZodRawShape>>(schema: T
     }
     else {
       try {
-        defaultBase[key] = field.parse({})
+        defaultBase[key] = field?.parse({})
       }
       catch {
         defaultBase[key] = undefined
