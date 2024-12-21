@@ -32,7 +32,7 @@ describe('zodObjectBuilder', () => {
 
     const actual = zodObjectBuilder({
       schema,
-      override: {},
+      overrides: {},
     })
 
     expect(actual).toStrictEqual(
@@ -52,7 +52,7 @@ describe('zodObjectBuilder', () => {
 
     const actual = zodObjectBuilder({
       schema,
-      override: {
+      overrides: {
         bar: true,
       },
     })

@@ -12,7 +12,7 @@ interface BaseConfig {
 // Overload for single override - returns single object
 export function zodObjectBuilder<T extends z.ZodObject<ZodRawShape>>(params: {
   schema: T
-  override: DeepPartial<z.infer<T>>
+  overrides: DeepPartial<z.infer<T>>
   config?: BaseConfig
 }): z.infer<T>
 
@@ -31,16 +31,14 @@ export function zodObjectBuilder<T extends z.ZodObject<ZodRawShape>>(params: {
 
 export function zodObjectBuilder<T extends z.ZodObject<ZodRawShape>>({
   schema,
-  override,
   overrides,
   config = { preserveNestedDefaults: false },
 }: {
   schema: T
-  override?: DeepPartial<z.infer<T>>
-  overrides?: DeepPartial<z.infer<T>>[]
+  overrides?: DeepPartial<z.infer<T>> | DeepPartial<z.infer<T>>[]
   config?: BaseConfig
 }): z.infer<T>[] | z.infer<T> {
-  if (overrides) {
+  if (overrides && Array.isArray(overrides)) {
     const objects: z.infer<T>[] = []
     overrides.forEach((override) => {
       if (config.preserveNestedDefaults) {
@@ -55,14 +53,14 @@ export function zodObjectBuilder<T extends z.ZodObject<ZodRawShape>>({
     })
     return objects
   }
-  else if (override) {
+  else if (overrides) {
     if (config.preserveNestedDefaults) {
       const base = buildDefaultObject(schema)
-      return merge(base, override)
+      return merge(base, overrides)
     }
     else {
       const base = schema.parse({})
-      return { ...base, ...override }
+      return { ...base, ...overrides }
     }
   }
   else {
