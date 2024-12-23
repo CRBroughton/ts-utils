@@ -1,5 +1,16 @@
 # @crbroughton/ts-utils
 
+## 0.2.3
+
+### Minor Changes
+
+- 2eafacf: add support for Rust style Result type to safeAwait
+- 6954d24: create zodObjectBuilder
+
+### Patch Changes
+
+- e998329: change first arg for safeAwait from function to promise
+
 ## 0.1.1
 
 ### Patch Changes
