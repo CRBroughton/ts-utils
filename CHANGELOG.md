@@ -1,5 +1,11 @@
 # @crbroughton/ts-utils
 
+## 0.2.4
+
+### Patch Changes
+
+- 4213120: fix nested arrays not returned preserved values
+
 ## 0.2.3
 
 ### Minor Changes
