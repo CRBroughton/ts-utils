@@ -26,10 +26,13 @@ interface BaseConfig {
  * // Define a schema
  * const UserSchema = z.object({
  *   id: z.string(),
- *   name: z.string(),
+ *   name: z.string().default("Craig R Broughton"),
  *   settings: z.object({
  *     theme: z.enum(['light', 'dark']),
  *     notifications: z.boolean()
+ *   }).default({
+ *     theme: 'dark',
+ *     notifications: true
  *   })
  * });
  *
@@ -83,10 +86,13 @@ export function zodObjectBuilder<T extends z.ZodObject<ZodRawShape>>(params: {
  * // Define a schema
  * const UserSchema = z.object({
  *   id: z.string(),
- *   name: z.string(),
+ *   name: z.string().default("Craig R Broughton"),
  *   settings: z.object({
  *     theme: z.enum(['light', 'dark']),
  *     notifications: z.boolean()
+ *   }).default({
+ *     theme: 'dark',
+ *     notifications: true
  *   })
  * });
  *
@@ -140,10 +146,13 @@ export function zodObjectBuilder<T extends z.ZodObject<ZodRawShape>>(params: {
  * // Define a schema
  * const UserSchema = z.object({
  *   id: z.string(),
- *   name: z.string(),
+ *   name: z.string().default("Craig R Broughton"),
  *   settings: z.object({
  *     theme: z.enum(['light', 'dark']),
  *     notifications: z.boolean()
+ *   }).default({
+ *     theme: 'dark',
+ *     notifications: true
  *   })
  * });
  *
@@ -196,10 +205,13 @@ export function zodObjectBuilder<T extends z.ZodObject<ZodRawShape>>(params: {
  * // Define a schema
  * const UserSchema = z.object({
  *   id: z.string(),
- *   name: z.string(),
+ *   name: z.string().default("Craig R Broughton"),
  *   settings: z.object({
  *     theme: z.enum(['light', 'dark']),
  *     notifications: z.boolean()
+ *   }).default({
+ *     theme: 'dark',
+ *     notifications: true
  *   })
  * });
  *
