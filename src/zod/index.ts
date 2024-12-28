@@ -1,5 +1,4 @@
 import { type ZodRawShape, z } from 'zod'
-import { merge } from 'ts-deepmerge'
 
 type DeepPartial<T> = T extends object ? {
   [P in keyof T]?: DeepPartial<T[P]>;
@@ -8,7 +7,7 @@ type DeepPartial<T> = T extends object ? {
 /**
  * Configuration options for the zodObjectBuilder.
  */
-interface BaseConfig {
+interface BaseConfig<T extends z.ZodObject<ZodRawShape>> {
   /**
    * When true, preserves default values in nested objects when merging overrides.
    * This is useful when you want to retain schema defaults while overriding specific fields.
@@ -27,8 +26,52 @@ interface BaseConfig {
    * })
    */
   count?: number
+
+  /**
+   * Generate sequential values for specific properties.
+   * Each property must be a key from the schema.
+   * @example
+   * sequence: {
+   *   properties: {
+   *     id: (i) => `USER-${i + 1}`,
+   *     email: (i) => `user${i + 1}@example.com`
+   *   }
+   * }
+   */
+  sequence?: {
+    properties: {
+      [K in keyof z.infer<T>]?: (index: number) => z.infer<T>[K]
+    }
+  }
 }
 
+interface GenerateConfig<T> {
+  sequence?: {
+    properties: {
+      [K in keyof T]?: (index: number) => T[K]
+    }
+  }
+}
+export function generateMocks<T>(
+  base: T,
+  count: number,
+  config: GenerateConfig<T>,
+): T[] {
+  const items: T[] = []
+
+  for (let i = 0; i < count; i++) {
+    const item = { ...base }
+    if (config.sequence) {
+      for (const [key, fn] of Object.entries(config.sequence.properties)) {
+        const sequenceFn = fn as (index: number) => T[keyof T]
+        item[key as keyof T] = sequenceFn(i)
+      }
+    }
+    items.push(item)
+  }
+
+  return items
+}
 /**
  * Creates objects from a Zod schema with optional overrides. This utility function helps generate
  * test data or default objects while allowing partial overrides of specific fields.
@@ -89,7 +132,7 @@ export function zodObjectBuilder<T extends z.ZodObject<ZodRawShape>>(params: {
   /** Optional override values. Can be a single object or array of objects */
   overrides: DeepPartial<z.infer<T>>
   /** Configuration options for controlling how mocks are generated */
-  config?: BaseConfig
+  config?: BaseConfig<T>
 }): z.infer<T>
 
 /**
@@ -152,7 +195,7 @@ export function zodObjectBuilder<T extends z.ZodObject<ZodRawShape>>(params: {
   /** Optional override values. Can be a single object or array of objects */
   overrides: DeepPartial<z.infer<T>>[]
   /** Configuration options for controlling how mocks are generated */
-  config?: BaseConfig
+  config?: BaseConfig<T>
 }): z.infer<T>[]
 
 /**
@@ -213,7 +256,7 @@ export function zodObjectBuilder<T extends z.ZodObject<ZodRawShape>>(params: {
   /** The Zod schema that defines the shape of the returned mocks */
   schema: T
   /** Configuration options for controlling how mocks are generated */
-  config?: BaseConfig
+  config?: BaseConfig<T>
 }): z.infer<T>[]
 
 /**
@@ -280,13 +323,8 @@ export function zodObjectBuilder<T extends z.ZodObject<ZodRawShape>>({
   /** Optional override values. Can be a single object or array of objects */
   overrides?: DeepPartial<z.infer<T>> | DeepPartial<z.infer<T>>[]
   /** Configuration options for controlling how mocks are generated */
-  config?: BaseConfig
+  config?: BaseConfig<T>
 }): z.infer<T>[] | z.infer<T> {
-  if (!overrides && config.count && config.count > 0) {
-    const base = buildDefaultObject(schema)
-    return Array.from({length: config.count}, () => ({...base}))
-  }
-
   if (overrides && Array.isArray(overrides)) {
     const objects: z.infer<T>[] = []
     overrides.forEach((override) => {
@@ -315,6 +353,10 @@ export function zodObjectBuilder<T extends z.ZodObject<ZodRawShape>>({
   }
   else {
     const base = buildDefaultObject(schema)
+
+    if (config.count && config.count > 0)
+      return generateMocks(base, config.count, config)
+
     return [base]
   }
 }
@@ -408,7 +450,6 @@ export function mergeWithArrayHandling<T>(
             const baseItem = (base[k] as unknown[])[0]
             if (baseItem && typeof baseItem === 'object')
               return { ...baseItem, ...item } as T[keyof T]
-            }
           }
           return item
         }) as T[keyof T]

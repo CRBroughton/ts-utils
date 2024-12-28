@@ -1,6 +1,141 @@
 import { describe, expect, test } from 'bun:test'
 import { z } from 'zod'
-import { buildDefaultObject, mergeWithArrayHandling, zodObjectBuilder } from '.'
+import { buildDefaultObject, generateMocks, mergeWithArrayHandling, zodObjectBuilder } from '.'
+
+describe('generateMocks', () => {
+  const baseUser = {
+    id: 'default-id',
+    name: 'John Smith',
+    email: 'john@email.com',
+    role: 'user' as const,
+  }
+
+  describe('sequence option', () => {
+    test('should apply sequential values to specified properties', () => {
+      const result = generateMocks(baseUser, 3, {
+        sequence: {
+          properties: {
+            id: i => `USER-${i + 1}`,
+            email: i => `user${i + 1}@email.com`,
+          },
+        },
+      })
+
+      expect(result).toStrictEqual([
+        { ...baseUser, id: 'USER-1', email: 'user1@email.com' },
+        { ...baseUser, id: 'USER-2', email: 'user2@email.com' },
+        { ...baseUser, id: 'USER-3', email: 'user3@email.com' },
+      ])
+    })
+
+    test('should handle single sequenced property', () => {
+      const result = generateMocks(baseUser, 2, {
+        sequence: {
+          properties: {
+            id: i => `USER-${i + 1}`,
+          },
+        },
+      })
+
+      expect(result).toStrictEqual([
+        { ...baseUser, id: 'USER-1' },
+        { ...baseUser, id: 'USER-2' },
+      ])
+    })
+
+    test('should maintain non-sequenced properties', () => {
+      const result = generateMocks(baseUser, 2, {
+        sequence: {
+          properties: {
+            id: i => `USER-${i + 1}`,
+          },
+        },
+      })
+
+      expect(result[0].name).toBe('John Smith')
+      expect(result[1].name).toBe('John Smith')
+    })
+
+    test('should handle count of 1', () => {
+      const result = generateMocks(baseUser, 1, {
+        sequence: {
+          properties: {
+            id: i => `USER-${i + 1}`,
+          },
+        },
+      })
+
+      expect(result).toHaveLength(1)
+      expect(result[0]).toEqual({ ...baseUser, id: 'USER-1' })
+    })
+  })
+})
+
+describe('zodObjectBuilder with sequence option', () => {
+  const UserSchema = z.object({
+    id: z.string().default('default-id'),
+    name: z.string().default('John Smith'),
+    email: z.string().email().default('john@email.com'),
+    role: z.enum(['admin', 'user']).default('user'),
+  })
+  test('should generate sequenced mocks when count and sequnece is provided', () => {
+    const defaultValues = UserSchema.parse({})
+
+    const result = zodObjectBuilder({
+      schema: UserSchema,
+      config: {
+        count: 3,
+        sequence: {
+          properties: {
+            id: i => `USER-${i + 1}`,
+            email: i => `user${i + 1}@email.com`,
+          },
+        },
+      },
+    })
+
+    expect(result).toEqual([
+      { ...defaultValues, id: 'USER-1', email: 'user1@email.com' },
+      { ...defaultValues, id: 'USER-2', email: 'user2@email.com' },
+      { ...defaultValues, id: 'USER-3', email: 'user3@email.com' },
+    ])
+  })
+
+  test('should ignore sequence when overrides are provided', () => {
+    const result = zodObjectBuilder({
+      schema: UserSchema,
+      config: {
+        sequence: {
+          properties: {
+            id: i => `USER-${i + 1}`,
+          },
+        },
+      },
+      overrides: [{ name: 'Alice' }, { name: 'Bob' }],
+    })
+
+    expect(result).toEqual([
+      { ...UserSchema.parse({}), name: 'Alice' },
+      { ...UserSchema.parse({}), name: 'Bob' },
+    ])
+  })
+
+  test('should require count when using sequence', () => {
+    const result = zodObjectBuilder({
+      schema: UserSchema,
+      config: {
+        sequence: {
+          properties: {
+            id: i => `USER-${i + 1}`,
+          },
+        },
+      },
+    })
+
+    // Without count, falls back to default behavior of single item
+    expect(result).toEqual([UserSchema.parse({})])
+  })
+})
 
 describe('zodObjectBuilder', () => {
   test('creates an array of mocks via the count config option', () => {
@@ -14,7 +149,7 @@ describe('zodObjectBuilder', () => {
     const actual = zodObjectBuilder({
       schema,
       config: {
-        count: 4
+        count: 4,
       },
     })
 
@@ -48,14 +183,14 @@ describe('zodObjectBuilder', () => {
     const actual = zodObjectBuilder({
       schema,
       config: {
-        count: 4
+        count: 4,
       },
-      overrides: { bar: true }
+      overrides: { bar: true },
     })
 
     expect(actual).toStrictEqual({
-        foo: 'Hello, World!',
-        bar: true,
+      foo: 'Hello, World!',
+      bar: true,
     })
   })
   test('create a zod object array from a schema', () => {
@@ -263,33 +398,33 @@ describe('zodObjectBuilder', () => {
       zipCode: z.string(),
       country: z.string(),
     }).default({
-      street: "123 Pine Street",
-      city: "Portland",
-      state: "OR",
-      zipCode: "97201",
-      country: "USA"
-    });
+      street: '123 Pine Street',
+      city: 'Portland',
+      state: 'OR',
+      zipCode: '97201',
+      country: 'USA',
+    })
 
     const customerInfoSchema = z.object({
       id: z.string().regex(/^CUST-\d{4}$/),
       name: z.string().min(1),
       email: z.string().email(),
-      shippingAddress: addressSchema
+      shippingAddress: addressSchema,
     }).default({
-      id: "CUST-1234",
-      name: "Alice Johnson",
-      email: "alice.j@email.com",
-    });
+      id: 'CUST-1234',
+      name: 'Alice Johnson',
+      email: 'alice.j@email.com',
+    })
 
     const paymentInfoSchema = z.object({
       method: z.enum(['credit_card', 'paypal']),
       status: z.enum(['completed', 'pending', 'failed']),
-      transactionId: z.string()
+      transactionId: z.string(),
     }).default({
       method: 'credit_card',
       status: 'pending',
-      transactionId: 'TXN-88776655'
-    });
+      transactionId: 'TXN-88776655',
+    })
 
     const orderItemSchema = z.object({
       productId: z.string().regex(/^PROD-\d{3}$/),
@@ -299,16 +434,15 @@ describe('zodObjectBuilder', () => {
       color: z.string().optional(),
       size: z.enum(['XS', 'S', 'M', 'L', 'XL', 'XXL']).optional(),
       variety: z.string().optional(),
-      weight: z.enum(['8oz', '12oz', '16oz', '1lb']).optional()
+      weight: z.enum(['8oz', '12oz', '16oz', '1lb']).optional(),
     }).default({
-      productId: "PROD-001",
-      name: "Sample Product",
+      productId: 'PROD-001',
+      name: 'Sample Product',
       quantity: 1,
       pricePerUnit: 29.99,
-      color: "Black",
-      size: "M"
-    });
-
+      color: 'Black',
+      size: 'M',
+    })
 
     const orderSchema = z.object({
       orderId: z.string().regex(/^ORD-\d{4}-\d{3}$/).default('ORD-2024-661'),
@@ -321,24 +455,23 @@ describe('zodObjectBuilder', () => {
       tax: z.number().nonnegative().default(3.00),
       totalAmount: z.number().positive().default(38.98),
       status: z.enum(['pending', 'processing', 'shipped', 'delivered', 'cancelled']).default('pending'),
-      trackingNumber: z.string().default('1Z999AA1234567890')
-    });
-
+      trackingNumber: z.string().default('1Z999AA1234567890'),
+    })
 
     const orders = zodObjectBuilder({
       schema: orderSchema,
       config: {
-        preserveNestedDefaults: true
+        preserveNestedDefaults: true,
       },
       overrides: [
         {
-          status: "delivered",
-          items: [{size: 'L'}],
+          status: 'delivered',
+          items: [{ size: 'L' }],
         },
-      ]
-    });
+      ],
+    })
 
-    expect(orders).toStrictEqual([{ "orderId": "ORD-2024-661", "customerInfo": { "id": "CUST-1234", "name": "Alice Johnson", "email": "alice.j@email.com", "shippingAddress": { "street": "123 Pine Street", "city": "Portland", "state": "OR", "zipCode": "97201", "country": "USA" } }, "orderDate": "11/11/1111", "items": [{ "productId": "PROD-001", "name": "Sample Product", "quantity": 1, "pricePerUnit": 29.99, "color": "Black", "size": "L" }], "paymentInfo": { "method": "credit_card", "status": "pending", "transactionId": "TXN-88776655" }, "subtotal": 29.99, "shippingCost": 5.99, "tax": 3, "totalAmount": 38.98, "status": "delivered", "trackingNumber": "1Z999AA1234567890" }])
+    expect(orders).toStrictEqual([{ orderId: 'ORD-2024-661', customerInfo: { id: 'CUST-1234', name: 'Alice Johnson', email: 'alice.j@email.com', shippingAddress: { street: '123 Pine Street', city: 'Portland', state: 'OR', zipCode: '97201', country: 'USA' } }, orderDate: '11/11/1111', items: [{ productId: 'PROD-001', name: 'Sample Product', quantity: 1, pricePerUnit: 29.99, color: 'Black', size: 'L' }], paymentInfo: { method: 'credit_card', status: 'pending', transactionId: 'TXN-88776655' }, subtotal: 29.99, shippingCost: 5.99, tax: 3, totalAmount: 38.98, status: 'delivered', trackingNumber: '1Z999AA1234567890' }])
   })
   test('it properly overrides nested array without preversing nested defaults', () => {
     const addressSchema = z.object({
@@ -346,35 +479,35 @@ describe('zodObjectBuilder', () => {
       city: z.string(),
       state: z.string(),
       zipCode: z.string(),
-      country: z.string()
+      country: z.string(),
     }).default({
-      street: "123 Pine Street",
-      city: "Portland",
-      state: "OR",
-      zipCode: "97201",
-      country: "USA"
-    });
+      street: '123 Pine Street',
+      city: 'Portland',
+      state: 'OR',
+      zipCode: '97201',
+      country: 'USA',
+    })
 
     const customerInfoSchema = z.object({
       id: z.string().regex(/^CUST-\d{4}$/),
       name: z.string().min(1),
       email: z.string().email(),
-      shippingAddress: addressSchema
+      shippingAddress: addressSchema,
     }).default({
-      id: "CUST-1234",
-      name: "Alice Johnson",
-      email: "alice.j@email.com",
-    });
+      id: 'CUST-1234',
+      name: 'Alice Johnson',
+      email: 'alice.j@email.com',
+    })
 
     const paymentInfoSchema = z.object({
       method: z.enum(['credit_card', 'paypal']),
       status: z.enum(['completed', 'pending', 'failed']),
-      transactionId: z.string()
+      transactionId: z.string(),
     }).default({
       method: 'credit_card',
       status: 'pending',
-      transactionId: 'TXN-88776655'
-    });
+      transactionId: 'TXN-88776655',
+    })
 
     const orderItemSchema = z.object({
       productId: z.string().regex(/^PROD-\d{3}$/).optional(),
@@ -384,16 +517,15 @@ describe('zodObjectBuilder', () => {
       color: z.string().optional(),
       size: z.enum(['XS', 'S', 'M', 'L', 'XL', 'XXL']).optional(),
       variety: z.string().optional(),
-      weight: z.enum(['8oz', '12oz', '16oz', '1lb']).optional()
+      weight: z.enum(['8oz', '12oz', '16oz', '1lb']).optional(),
     }).default({
-      productId: "PROD-001",
-      name: "Sample Product",
+      productId: 'PROD-001',
+      name: 'Sample Product',
       quantity: 1,
       pricePerUnit: 29.99,
-      color: "Black",
-      size: "M"
-    });
-
+      color: 'Black',
+      size: 'M',
+    })
 
     const orderSchema = z.object({
       orderId: z.string().regex(/^ORD-\d{4}-\d{3}$/).default('ORD-2024-661'),
@@ -406,21 +538,20 @@ describe('zodObjectBuilder', () => {
       tax: z.number().nonnegative().default(3.00),
       totalAmount: z.number().positive().default(38.98),
       status: z.enum(['pending', 'processing', 'shipped', 'delivered', 'cancelled']).default('pending'),
-      trackingNumber: z.string().default('1Z999AA1234567890')
-    });
-
+      trackingNumber: z.string().default('1Z999AA1234567890'),
+    })
 
     const orders = zodObjectBuilder({
       schema: orderSchema,
       overrides: [
         {
-          status: "delivered",
-          items: [{size: 'L'}],
+          status: 'delivered',
+          items: [{ size: 'L' }],
         },
-      ]
-    });
+      ],
+    })
 
-    expect(orders).toEqual([{ "orderId": "ORD-2024-661", "customerInfo": { "id": "CUST-1234", "name": "Alice Johnson", "email": "alice.j@email.com", "shippingAddress": { "street": "123 Pine Street", "city": "Portland", "state": "OR", "zipCode": "97201", "country": "USA" } }, "orderDate": "11/11/1111", "items": [{"size": "L" }], "paymentInfo": { "method": "credit_card", "status": "pending", "transactionId": "TXN-88776655" }, "subtotal": 29.99, "shippingCost": 5.99, "tax": 3, "totalAmount": 38.98, "status": "delivered", "trackingNumber": "1Z999AA1234567890" }])
+    expect(orders).toEqual([{ orderId: 'ORD-2024-661', customerInfo: { id: 'CUST-1234', name: 'Alice Johnson', email: 'alice.j@email.com', shippingAddress: { street: '123 Pine Street', city: 'Portland', state: 'OR', zipCode: '97201', country: 'USA' } }, orderDate: '11/11/1111', items: [{ size: 'L' }], paymentInfo: { method: 'credit_card', status: 'pending', transactionId: 'TXN-88776655' }, subtotal: 29.99, shippingCost: 5.99, tax: 3, totalAmount: 38.98, status: 'delivered', trackingNumber: '1Z999AA1234567890' }])
   })
 })
 
@@ -583,7 +714,6 @@ describe('buildDefaultObject', () => {
   })
 })
 
-
 describe('mergeWithArrayHandling', () => {
   test('should replace arrays completely instead of merging them', () => {
     const base = { items: [{ id: 1, name: 'default' }] }
@@ -591,7 +721,7 @@ describe('mergeWithArrayHandling', () => {
 
     // When calling directly without defaults
     expect(mergeWithArrayHandling(base, override, false)).toEqual({
-      items: [{ id: 2 }] as any
+      items: [{ id: 2 }] as any,
     })
   })
 
@@ -600,26 +730,26 @@ describe('mergeWithArrayHandling', () => {
       categories: [
         {
           name: 'Category 1',
-          items: [{ id: 1, name: 'Item 1', status: 'active' }]
-        }
-      ]
+          items: [{ id: 1, name: 'Item 1', status: 'active' }],
+        },
+      ],
     }
     const override = {
       categories: [
         {
           name: 'Category 2',
-          items: [{ id: 2 }]
-        }
-      ]
+          items: [{ id: 2 }],
+        },
+      ],
     }
 
     expect(mergeWithArrayHandling(base, override, false)).toEqual({
       categories: [
         {
           name: 'Category 2',
-          items: [{ id: 2 }] as any
-        }
-      ]
+          items: [{ id: 2 }] as any,
+        },
+      ],
     })
   })
 
@@ -630,18 +760,18 @@ describe('mergeWithArrayHandling', () => {
       categories: [
         {
           name: 'Category 1',
-          subItems: [{ id: 1, type: 'sub' }]
-        }
-      ]
+          subItems: [{ id: 1, type: 'sub' }],
+        },
+      ],
     }
     const override = {
       items: [{ id: 2 }],
       categories: [
         {
           name: 'Category 2',
-          subItems: [{ id: 3 }]
-        }
-      ]
+          subItems: [{ id: 3 }],
+        },
+      ],
     }
 
     expect(mergeWithArrayHandling(base, override, true)).toEqual({
@@ -649,9 +779,9 @@ describe('mergeWithArrayHandling', () => {
       categories: [
         {
           name: 'Category 2',
-          subItems: [{ id: 3 }] as any
-        }
-      ]
+          subItems: [{ id: 3 }] as any,
+        },
+      ],
     })
   })
 })

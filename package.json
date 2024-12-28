@@ -1,5 +1,6 @@
 {
   "name": "@crbroughton/ts-utils",
+  "type": "module",
   "version": "0.2.5",
   "description": "A collection of helper functions and types",
   "author": "Craig R Broughton",
