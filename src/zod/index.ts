@@ -5,8 +5,27 @@ type DeepPartial<T> = T extends object ? {
   [P in keyof T]?: DeepPartial<T[P]>;
 } : T
 
+/**
+ * Configuration options for the zodObjectBuilder.
+ */
 interface BaseConfig {
+  /**
+   * When true, preserves default values in nested objects when merging overrides.
+   * This is useful when you want to retain schema defaults while overriding specific fields.
+   * @default false
+   */
   preserveNestedDefaults?: boolean
+
+  /**
+   * Generates the specified number of mocks using schema defaults.
+   * Only applies when no overrides are provided.
+   * @example
+   * // Generate 5 users with default values
+   * zodObjectBuilder({
+   *   schema: UserSchema,
+   *   config: { count: 5 }
+   * })
+   */
   count?: number
 }
 
@@ -65,8 +84,11 @@ interface BaseConfig {
  * });
  */
 export function zodObjectBuilder<T extends z.ZodObject<ZodRawShape>>(params: {
+  /** The Zod schema that defines the shape of the returned mocks */
   schema: T
+  /** Optional override values. Can be a single object or array of objects */
   overrides: DeepPartial<z.infer<T>>
+  /** Configuration options for controlling how mocks are generated */
   config?: BaseConfig
 }): z.infer<T>
 
@@ -125,8 +147,11 @@ export function zodObjectBuilder<T extends z.ZodObject<ZodRawShape>>(params: {
  * });
  */
 export function zodObjectBuilder<T extends z.ZodObject<ZodRawShape>>(params: {
+  /** The Zod schema that defines the shape of the returned mocks */
   schema: T
+  /** Optional override values. Can be a single object or array of objects */
   overrides: DeepPartial<z.infer<T>>[]
+  /** Configuration options for controlling how mocks are generated */
   config?: BaseConfig
 }): z.infer<T>[]
 
@@ -185,7 +210,9 @@ export function zodObjectBuilder<T extends z.ZodObject<ZodRawShape>>(params: {
  * });
  */
 export function zodObjectBuilder<T extends z.ZodObject<ZodRawShape>>(params: {
+  /** The Zod schema that defines the shape of the returned mocks */
   schema: T
+  /** Configuration options for controlling how mocks are generated */
   config?: BaseConfig
 }): z.infer<T>[]
 
@@ -248,8 +275,11 @@ export function zodObjectBuilder<T extends z.ZodObject<ZodRawShape>>({
   overrides,
   config = { preserveNestedDefaults: false },
 }: {
+  /** The Zod schema that defines the shape of the returned mocks */
   schema: T
+  /** Optional override values. Can be a single object or array of objects */
   overrides?: DeepPartial<z.infer<T>> | DeepPartial<z.infer<T>>[]
+  /** Configuration options for controlling how mocks are generated */
   config?: BaseConfig
 }): z.infer<T>[] | z.infer<T> {
   if (!overrides && config.count && config.count > 0) {
