@@ -261,7 +261,7 @@ describe('zodObjectBuilder', () => {
       city: z.string(),
       state: z.string(),
       zipCode: z.string(),
-      country: z.string()
+      country: z.string(),
     }).default({
       street: "123 Pine Street",
       city: "Portland",
