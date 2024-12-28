@@ -43,13 +43,42 @@ interface BaseConfig<T extends z.ZodObject<ZodRawShape>> {
       [K in keyof z.infer<T>]?: (index: number) => z.infer<T>[K]
     }
   }
+  /**
+   * Transform each generated item.
+   * Useful for adding computed fields or modifying existing ones.
+   * @param item The generated item before transformation
+   * @param index The index of the current item
+   */
+  transform?: ({ item, index }: { item: z.infer<T>, index: number }) => {
+    [K in keyof z.infer<T>]?: z.infer<T>[K]
+  }
 }
 
 interface GenerateConfig<T> {
+  /**
+   * Generate sequential values for specific properties.
+   * Each property must be a key from the schema.
+   * @example
+   * sequence: {
+   *   properties: {
+   *     id: (i) => `USER-${i + 1}`,
+   *     email: (i) => `user${i + 1}@example.com`
+   *   }
+   * }
+   */
   sequence?: {
     properties: {
       [K in keyof T]?: (index: number) => T[K]
     }
+  }
+  /**
+   * Transform each generated item.
+   * Useful for adding computed fields or modifying existing ones.
+   * @param item The generated item before transformation
+   * @param index The index of the current item
+   */
+  transform?: ({ item, index }: { item: T, index: number }) => {
+    [K in keyof T]?: T[K]
   }
 }
 export function generateMocks<T>(
@@ -60,13 +89,22 @@ export function generateMocks<T>(
   const items: T[] = []
 
   for (let i = 0; i < count; i++) {
-    const item = { ...base }
+    let item = { ...base }
     if (config.sequence) {
       for (const [key, fn] of Object.entries(config.sequence.properties)) {
         const sequenceFn = fn as (index: number) => T[keyof T]
         item[key as keyof T] = sequenceFn(i)
       }
     }
+
+    if (config.transform) {
+      const transformed = config.transform({
+        index: i,
+        item,
+      })
+      item = { ...item, ...transformed }
+    }
+
     items.push(item)
   }
 
@@ -382,7 +420,6 @@ export function zodObjectBuilder<T extends z.ZodObject<ZodRawShape>>({
     overrides.forEach((override) => {
       if (config.preserveNestedDefaults) {
         const base = buildDefaultObject(schema)
-        // Now override is a single object, not an array
         const newObject = mergeWithArrayHandling(base, override)
         objects.push(newObject)
       }

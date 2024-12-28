@@ -71,6 +71,94 @@ describe('generateMocks', () => {
   })
 })
 
+describe('transform option', () => {
+  const baseUser = {
+    id: 'default-id',
+    name: 'John Smith',
+    email: 'john@email.com',
+    createdAt: new Date(),
+    lastLoginDate: new Date(),
+    loginCount: 0,
+  }
+
+  test('should apply transform to each item', () => {
+    const baseDate = new Date('2024-01-01')
+
+    const result = generateMocks(baseUser, 3, {
+      transform: ({ index }) => ({
+        createdAt: new Date(baseDate.getTime() + (index * 24 * 60 * 60 * 1000)),
+        loginCount: index * 10,
+      }),
+    })
+
+    expect(result).toEqual([
+      { ...baseUser, createdAt: new Date('2024-01-01'), loginCount: 0 },
+      { ...baseUser, createdAt: new Date('2024-01-02'), loginCount: 10 },
+      { ...baseUser, createdAt: new Date('2024-01-03'), loginCount: 20 },
+    ])
+  })
+
+  test('should work with sequence and random features', () => {
+    const result = generateMocks(baseUser, 2, {
+      sequence: {
+        properties: {
+          id: i => `USER-${i + 1}`,
+        },
+      },
+      transform: ({ item, index }) => ({
+        lastLoginDate: new Date(item.createdAt.getTime() + (index * 60 * 60 * 1000)), // 1 hour apart,
+      }),
+    })
+
+    expect(result[0].id).toBe('USER-1')
+    expect(result[1].id).toBe('USER-2')
+    expect(result[1].lastLoginDate.getTime() - result[0].lastLoginDate.getTime()).toBe(60 * 60 * 1000)
+  })
+
+  test('should receive correct index in transform', () => {
+    const indices: number[] = []
+
+    generateMocks(baseUser, 3, {
+      transform: ({ item, index }) => {
+        indices.push(index)
+        return item
+      },
+    })
+
+    expect(indices).toEqual([0, 1, 2])
+  })
+})
+
+describe('zodObjectBuilder with transform option', () => {
+  test('should generate sequenced mocks when count and sequnece is provided', () => {
+    const currentDate = new Date('2024-01-01T00:00:00.000Z')
+    const UserSchema = z.object({
+      id: z.string().default('default-id'),
+      name: z.string().default('John Smith'),
+      email: z.string().email().default('john@email.com'),
+      role: z.enum(['admin', 'user']).default('user'),
+      lastLoginDate: z.date().default(currentDate),
+    })
+    const defaultValues = UserSchema.parse({})
+
+    const result = zodObjectBuilder({
+      schema: UserSchema,
+      config: {
+        count: 3,
+        transform: ({ index }) => ({
+          lastLoginDate: new Date(currentDate.getTime() + (index * 60 * 60 * 1000)), // 1 hour apart,
+        }),
+      },
+    })
+
+    expect(result).toEqual([
+      { ...defaultValues, lastLoginDate: new Date('2024-01-01T00:00:00.000Z') },
+      { ...defaultValues, lastLoginDate: new Date('2024-01-01T01:00:00.000Z') },
+      { ...defaultValues, lastLoginDate: new Date('2024-01-01T02:00:00.000Z') },
+    ])
+  })
+})
+
 describe('zodObjectBuilder with sequence option', () => {
   const UserSchema = z.object({
     id: z.string().default('default-id'),
