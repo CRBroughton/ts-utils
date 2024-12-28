@@ -44,7 +44,6 @@
     "typescript": "^5.0.0"
   },
   "dependencies": {
-    "ts-deepmerge": "^7.0.2",
     "zod": "^3.24.1"
   },
   "devDependencies": {
