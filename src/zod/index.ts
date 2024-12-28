@@ -7,6 +7,7 @@ type DeepPartial<T> = T extends object ? {
 
 interface BaseConfig {
   preserveNestedDefaults?: boolean
+  count?: number
 }
 
 /**
@@ -251,6 +252,11 @@ export function zodObjectBuilder<T extends z.ZodObject<ZodRawShape>>({
   overrides?: DeepPartial<z.infer<T>> | DeepPartial<z.infer<T>>[]
   config?: BaseConfig
 }): z.infer<T>[] | z.infer<T> {
+  if (!overrides && config.count && config.count > 0) {
+    const base = buildDefaultObject(schema)
+    return Array.from({length: config.count}, () => ({...base}))
+  }
+
   if (overrides && Array.isArray(overrides)) {
     const objects: z.infer<T>[] = []
     overrides.forEach((override) => {

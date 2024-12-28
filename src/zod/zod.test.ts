@@ -3,6 +3,61 @@ import { z } from 'zod'
 import { buildDefaultObject, mergeWithArrayHandling, zodObjectBuilder } from '.'
 
 describe('zodObjectBuilder', () => {
+  test('creates an array of mocks via the count config option', () => {
+    const schema = z.object(
+      {
+        foo: z.string().default('Hello, World!'),
+        bar: z.boolean().default(false),
+      },
+    )
+
+    const actual = zodObjectBuilder({
+      schema,
+      config: {
+        count: 4
+      },
+    })
+
+    expect(actual).toStrictEqual([
+      {
+        foo: 'Hello, World!',
+        bar: false,
+      },
+      {
+        foo: 'Hello, World!',
+        bar: false,
+      },
+      {
+        foo: 'Hello, World!',
+        bar: false,
+      },
+      {
+        foo: 'Hello, World!',
+        bar: false,
+      },
+    ])
+  })
+  test('the override option properly overrides the count value if used', () => {
+    const schema = z.object(
+      {
+        foo: z.string().default('Hello, World!'),
+        bar: z.boolean().default(false),
+      },
+    )
+
+    const actual = zodObjectBuilder({
+      schema,
+      config: {
+        count: 4
+      },
+      overrides: { bar: true }
+    })
+
+    expect(actual).toStrictEqual({
+        foo: 'Hello, World!',
+        bar: true,
+    })
+  })
   test('create a zod object array from a schema', () => {
     const schema = z.object(
       {
