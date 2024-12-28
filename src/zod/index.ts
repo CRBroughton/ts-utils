@@ -125,6 +125,19 @@ export function generateMocks<T>(
  *   overrides: { name: 'John', settings: { theme: 'dark' } },
  *   config: { preserveNestedDefaults: true }
  * });
+ * // Generate multiple objects with sequential values
+ * const sequentialUsers = zodObjectBuilder({
+ *   schema: UserSchema,
+ *   config: {
+ *     count: 3,
+ *     sequence: {
+ *       properties: {
+ *         id: (i) => `USER-${i + 1}`,
+ *         name: (i) => `User ${i + 1}`
+ *       }
+ *     }
+ *   }
+ * });
  */
 export function zodObjectBuilder<T extends z.ZodObject<ZodRawShape>>(params: {
   /** The Zod schema that defines the shape of the returned mocks */
@@ -187,6 +200,19 @@ export function zodObjectBuilder<T extends z.ZodObject<ZodRawShape>>(params: {
  *   schema: UserSchema,
  *   overrides: { name: 'John', settings: { theme: 'dark' } },
  *   config: { preserveNestedDefaults: true }
+ * });
+ * // Generate multiple objects with sequential values
+ * const sequentialUsers = zodObjectBuilder({
+ *   schema: UserSchema,
+ *   config: {
+ *     count: 3,
+ *     sequence: {
+ *       properties: {
+ *         id: (i) => `USER-${i + 1}`,
+ *         name: (i) => `User ${i + 1}`
+ *       }
+ *     }
+ *   }
  * });
  */
 export function zodObjectBuilder<T extends z.ZodObject<ZodRawShape>>(params: {
@@ -251,6 +277,19 @@ export function zodObjectBuilder<T extends z.ZodObject<ZodRawShape>>(params: {
  *   overrides: { name: 'John', settings: { theme: 'dark' } },
  *   config: { preserveNestedDefaults: true }
  * });
+ * // Generate multiple objects with sequential values
+ * const sequentialUsers = zodObjectBuilder({
+ *   schema: UserSchema,
+ *   config: {
+ *     count: 3,
+ *     sequence: {
+ *       properties: {
+ *         id: (i) => `USER-${i + 1}`,
+ *         name: (i) => `User ${i + 1}`
+ *       }
+ *     }
+ *   }
+ * });
  */
 export function zodObjectBuilder<T extends z.ZodObject<ZodRawShape>>(params: {
   /** The Zod schema that defines the shape of the returned mocks */
@@ -311,6 +350,19 @@ export function zodObjectBuilder<T extends z.ZodObject<ZodRawShape>>(params: {
  *   schema: UserSchema,
  *   overrides: { name: 'John', settings: { theme: 'dark' } },
  *   config: { preserveNestedDefaults: true }
+ * });
+ * // Generate multiple objects with sequential values
+ * const sequentialUsers = zodObjectBuilder({
+ *   schema: UserSchema,
+ *   config: {
+ *     count: 3,
+ *     sequence: {
+ *       properties: {
+ *         id: (i) => `USER-${i + 1}`,
+ *         name: (i) => `User ${i + 1}`
+ *       }
+ *     }
+ *   }
  * });
  */
 export function zodObjectBuilder<T extends z.ZodObject<ZodRawShape>>({

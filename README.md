@@ -52,45 +52,61 @@ schema support. Below is an example of `zodObjectBuilder` in action with it's va
 use-cases.
 
 ``` typescript
- // Define a schema
- const UserSchema = z.object({
-    id: z.string().default('1'),
-    name: z.string().default("Craig R Broughton"),
-    settings: z.object({
-      theme: z.enum(['light', 'dark']),
-      notifications: z.boolean()
-    }).default({
-      theme: 'dark',
-      notifications: true
-    })
-  });
+// Define a schema
+const UserSchema = z.object({
+  id: z.string().default('1'),
+  name: z.string().default("Craig R Broughton"),
+  settings: z.object({
+    theme: z.enum(['light', 'dark']),
+    notifications: z.boolean()
+  }).default({
+    theme: 'dark',
+    notifications: true
+  })
+});
 
- // Create a single object with overrides
- const user = zodObjectBuilder({
-   schema: UserSchema,
-   overrides: { name: 'John', settings: { theme: 'dark' } }
- });
+// Create a single object with overrides
+const user = zodObjectBuilder({
+  schema: UserSchema,
+  overrides: { name: 'John', settings: { theme: 'dark' } }
+});
 
- // Create multiple objects with overrides
- const users = zodObjectBuilder({
-   schema: UserSchema,
-   overrides: [
-     { name: 'John' },
-     { name: 'Jane', settings: { theme: 'light' } }
-   ]
- });
+// Create multiple objects with overrides
+const users = zodObjectBuilder({
+  schema: UserSchema,
+  overrides: [
+    { name: 'John' },
+    { name: 'Jane', settings: { theme: 'light' } }
+  ]
+});
 
- // Create default object(nested in an array) with no overrides
- const defaultUsers = zodObjectBuilder({
-   schema: UserSchema
- });
+// Create default object(nested in an array) with no overrides
+const defaultUsers = zodObjectBuilder({
+  schema: UserSchema
+});
 
- // Preserve nested defaults with overrides
- const userWithDefaults = zodObjectBuilder({
-   schema: UserSchema,
-   overrides: { name: 'John', settings: { theme: 'dark' } },
-   config: { preserveNestedDefaults: true }
- });
+// Preserve nested defaults with overrides
+const userWithDefaults = zodObjectBuilder({
+  schema: UserSchema,
+  overrides: { name: 'John', settings: { theme: 'dark' } },
+  config: { preserveNestedDefaults: true }
+});
+
+// Generate multiple objects with sequential values
+const sequentialUsers = zodObjectBuilder({
+  schema: UserSchema,
+  config: {
+    count: 3,
+    sequence: {
+      properties: {
+        id: (i) => `USER-${i + 1}`,
+        name: (i) => `User ${i + 1}`
+       }
+    }
+  }
+});
+ /
+
 ```
 ## Development Installation
 
