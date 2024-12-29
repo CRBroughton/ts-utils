@@ -14,5 +14,6 @@ export {
 } from './src/utils'
 
 export {
+  type SchemaTransforms,
   zodObjectBuilder,
 } from './src/zod'

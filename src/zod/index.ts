@@ -5,6 +5,44 @@ type DeepPartial<T> = T extends object ? {
 } : T
 
 /**
+ * Create type-safe transform functions based on your Zod schema.
+ * Use this to create reusable, schema-validated transformations for generating mock data.
+ * 
+ * @example
+ * const UserSchema = z.object({
+ *   id: z.string().default('default-id'),
+ *   name: z.string().default('John Smith'),
+ *   email: z.string().email().default('john@email.com'),
+ *   role: z.enum(['admin', 'user']).default('user')
+ * })
+ * 
+ * const transforms: SchemaTransforms<z.infer<typeof UserSchema>> = {
+ *   id: ({ index }) => `USER-${index + 1}`,
+ *   email: ({ index }) => `user${index + 1}@example.com`,
+ *   // role and name will use schema defaults if not specified
+ * }
+ * 
+ * const result = zodObjectBuilder({
+ *   schema: UserSchema,
+ *   config: {
+ *     count: 3,
+ *     transform: transforms
+ *   }
+ * })
+ * // result = [
+ * //   { id: 'USER-1', name: 'John Smith', email: 'user1@example.com', role: 'user' },
+ * //   { id: 'USER-2', name: 'John Smith', email: 'user2@example.com', role: 'user' },
+ * //   { id: 'USER-3', name: 'John Smith', email: 'user3@example.com', role: 'user' }
+ * // ]
+ */
+export type SchemaTransforms<T> = {
+  [K in keyof T]?: (params: {
+    item: T
+    index: number
+  }) => T[K]
+}
+
+/**
  * Configuration options for the zodObjectBuilder.
  */
 interface BaseConfig<T extends z.ZodObject<ZodRawShape>> {
@@ -39,6 +77,30 @@ interface BaseConfig<T extends z.ZodObject<ZodRawShape>> {
   transform?: {
     [K in keyof z.infer<T>]?: ({ item, index }: { item: z.infer<T>, index: number }) => z.infer<T>[K]
   }
+
+  /**
+  * Process the array of generated items before returning.
+  * Useful for sorting, filtering, or adding derived data across the collection.
+  * 
+  * @param items Array of generated mocks
+  * @returns Processed array of mocks
+  * 
+  * @example
+  * zodObjectBuilder({
+  *   schema: UserSchema,
+  *   config: {
+  *     count: 3,
+  *     transform: {
+  *       name: ({ index }) => `User ${index + 1}`
+  *     },
+  *     afterGenerate: (items) => {
+  *       // Sort users by name
+  *       return [...items].sort((a, b) => a.name.localeCompare(b.name))
+  *     }
+  *   }
+  * })
+  */
+  afterGenerate?: (items: z.infer<T>[]) => z.infer<T>[]
 }
 
 interface GenerateConfig<T> {
@@ -51,9 +113,31 @@ interface GenerateConfig<T> {
    *   email: ({ item, index }) => `user${item.id}-${index + 1}@example.com`
    * }
    */
-  transform?: {
-    [K in keyof T]?: ({ item, index }: { item: T, index: number }) => T[K]
-  }
+  transform?: SchemaTransforms<T>
+
+  /**
+  * Process the array of generated items before returning.
+  * Useful for sorting, filtering, or adding derived data across the collection.
+  * 
+  * @param items Array of generated mocks
+  * @returns Processed array of mocks
+  * 
+  * @example
+  * zodObjectBuilder({
+  *   schema: UserSchema,
+  *   config: {
+  *     count: 3,
+  *     transform: {
+  *       name: ({ index }) => `User ${index + 1}`
+  *     },
+  *     afterGenerate: (items) => {
+  *       // Sort users by name
+  *       return [...items].sort((a, b) => a.name.localeCompare(b.name))
+  *     }
+  *   }
+  * })
+  */
+  afterGenerate?: (items: T[]) => T[]
 }
 export function generateMocks<T>(
   base: T,
@@ -74,6 +158,11 @@ export function generateMocks<T>(
 
     items.push(item)
   }
+
+  
+ if (config.afterGenerate) {
+  return config.afterGenerate(items)
+}
 
   return items
 }
@@ -387,6 +476,11 @@ export function zodObjectBuilder<T extends z.ZodObject<ZodRawShape>>({
         objects.push({ ...base, ...override })
       }
     })
+
+    if (config.afterGenerate) {
+      return config.afterGenerate(objects)
+    }
+
     return objects
   }
   else if (overrides) {
@@ -402,9 +496,13 @@ export function zodObjectBuilder<T extends z.ZodObject<ZodRawShape>>({
   else {
     const base = buildDefaultObject(schema)
 
-    if (config.count && config.count > 0)
-      return generateMocks(base, config.count, config)
-
+    if (config.count && config.count > 0) {
+      const items = generateMocks(base, config.count, config)
+      if (config.afterGenerate) {
+        return config.afterGenerate(items)
+      }
+      return items
+    }
     return [base]
   }
 }

@@ -1,6 +1,99 @@
 import { describe, expect, test } from 'bun:test'
 import { z } from 'zod'
-import { buildDefaultObject, generateMocks, mergeWithArrayHandling, zodObjectBuilder } from '.'
+import { buildDefaultObject, generateMocks, mergeWithArrayHandling, zodObjectBuilder, type SchemaTransforms } from '.'
+
+describe('zodObjectBuilder afterGenerate', () => {
+  const UserSchema = z.object({
+    id: z.string().default('default-id'),
+    name: z.string().default('John Smith'),
+    email: z.string().email().default('john@email.com'),
+    role: z.enum(['admin', 'user']).default('user')
+  })
+
+  test('can sort generated items', () => {
+    const result = zodObjectBuilder({
+      schema: UserSchema,
+      config: {
+        count: 3,
+        transform: {
+          id: ({ index }) => `USER-${index + 1}`,
+        },
+        afterGenerate: (items) => {
+          return [...items].sort((a, b) => b.id.localeCompare(a.id))
+        }
+      }
+    })
+
+    expect(result).toEqual([
+      { ...UserSchema.parse({}), id: 'USER-3' },
+      { ...UserSchema.parse({}), id: 'USER-2' },
+      { ...UserSchema.parse({}), id: 'USER-1' }
+    ])
+  })
+
+  test('can add derived data', () => {
+    const result = zodObjectBuilder({
+      schema: UserSchema,
+      config: {
+        count: 3,
+        transform: {
+          name: ({ index }) => `User ${index + 1}`
+        },
+        afterGenerate: (items) => {
+          const totalLength = items.reduce((sum, item) => sum + item.name.length, 0)
+          const avgLength = totalLength / items.length
+          
+          return items.map(item => ({
+            ...item,
+            name: `${item.name} (avg: ${avgLength.toFixed(1)})`
+          }))
+        }
+      }
+    })
+
+    expect(result[0].name).toContain('(avg:')
+    expect(result.every(item => item.name.includes('(avg:'))).toBe(true)
+  })
+
+  test('works with overrides array', () => {
+    const result = zodObjectBuilder({
+      schema: UserSchema,
+      config: {
+        afterGenerate: (items) => {
+          return [...items].sort((a, b) => b.name.localeCompare(a.name))
+        }
+      },
+      overrides: [
+        { name: 'Alice' },
+        { name: 'Bob' },
+        { name: 'Charlie' }
+      ],
+    })
+
+    expect(result).toEqual([
+      { ...UserSchema.parse({}), name: 'Charlie' },
+      { ...UserSchema.parse({}), name: 'Bob' },
+      { ...UserSchema.parse({}), name: 'Alice' }
+    ])
+  })
+
+  test('should not affect single item override', () => {
+    const result = zodObjectBuilder({
+      schema: UserSchema,
+      config: {
+        afterGenerate: (items) => {
+          return items.map(item => ({ ...item, name: 'Modified' }))
+        }
+      },
+      overrides: { name: 'Single User' },
+    })
+
+    expect(result).toEqual({ 
+      ...UserSchema.parse({}), 
+      name: 'Single User' 
+    })
+  })
+})
 
 describe('generateMocks', () => {
   const baseUser = {
@@ -83,6 +176,26 @@ describe('zodObjectBuilder with transform option', () => {
     name: z.string().default('John Smith'),
     email: z.string().email().default('john@email.com'),
     role: z.enum(['admin', 'user']).default('user'),
+  })
+  test('can create default transforms with the Transform type', () => {
+    const transforms: SchemaTransforms<z.infer<typeof UserSchema>> = {
+      id: ({ index }) => `USER-${index + 1}`,
+      email: ({ index }) => `user${index + 1}@email.com`,
+    }
+  
+    const result = zodObjectBuilder({
+      schema: UserSchema,
+      config: {
+        count: 3,
+        transform: transforms
+      }
+    })
+  
+    expect(result).toEqual([
+      { ...UserSchema.parse({}), id: 'USER-1', email: 'user1@email.com' },
+      { ...UserSchema.parse({}), id: 'USER-2', email: 'user2@email.com' },
+      { ...UserSchema.parse({}), id: 'USER-3', email: 'user3@email.com' }
+    ])
   })
   test('should generate sequenced mocks when count and sequnece is provided', () => {
     const defaultValues = UserSchema.parse({})
