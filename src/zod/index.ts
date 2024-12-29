@@ -32,10 +32,8 @@ interface BaseConfig<T extends z.ZodObject<ZodRawShape>> {
    * Each property must be a key from the schema.
    * @example
    * transform: {
-   *   properties: {
-   *     id: ({ index }) => `USER-${index + 1}`,
-   *     email: ({ item, index }) => `user${item.id}-${index + 1}@example.com`
-   *   }
+   *   id: ({ index }) => `USER-${index + 1}`,
+   *   email: ({ item, index }) => `user${item.id}-${index + 1}@example.com`
    * }
    */
   transform?: {
@@ -49,10 +47,8 @@ interface GenerateConfig<T> {
    * Each property must be a key from the schema.
    * @example
    * transform: {
-   *   properties: {
-   *     id: ({ index }) => `USER-${index + 1}`,
-   *     email: ({ item, index }) => `user${item.id}-${index + 1}@example.com`
-   *   }
+   *   id: ({ index }) => `USER-${index + 1}`,
+   *   email: ({ item, index }) => `user${item.id}-${index + 1}@example.com`
    * }
    */
   transform?: {
@@ -139,11 +135,9 @@ export function generateMocks<T>(
  *   schema: UserSchema,
  *   config: {
  *     count: 3,
- *     sequence: {
- *       properties: {
- *         id: (i) => `USER-${i + 1}`,
- *         name: (i) => `User ${i + 1}`
- *       }
+ *     transform: {
+ *       id: (i) => `USER-${i + 1}`,
+ *       name: (i) => `User ${i + 1}`
  *     }
  *   }
  * });
@@ -215,11 +209,9 @@ export function zodObjectBuilder<T extends z.ZodObject<ZodRawShape>>(params: {
  *   schema: UserSchema,
  *   config: {
  *     count: 3,
- *     sequence: {
- *       properties: {
- *         id: (i) => `USER-${i + 1}`,
- *         name: (i) => `User ${i + 1}`
- *       }
+ *     transform: {
+ *       id: (i) => `USER-${i + 1}`,
+ *       name: (i) => `User ${i + 1}`
  *     }
  *   }
  * });
@@ -291,11 +283,9 @@ export function zodObjectBuilder<T extends z.ZodObject<ZodRawShape>>(params: {
  *   schema: UserSchema,
  *   config: {
  *     count: 3,
- *     sequence: {
- *       properties: {
- *         id: (i) => `USER-${i + 1}`,
- *         name: (i) => `User ${i + 1}`
- *       }
+ *     transform: {
+ *       id: (i) => `USER-${i + 1}`,
+ *       name: (i) => `User ${i + 1}`
  *     }
  *   }
  * });
@@ -365,11 +355,9 @@ export function zodObjectBuilder<T extends z.ZodObject<ZodRawShape>>(params: {
  *   schema: UserSchema,
  *   config: {
  *     count: 3,
- *     sequence: {
- *       properties: {
- *         id: (i) => `USER-${i + 1}`,
- *         name: (i) => `User ${i + 1}`
- *       }
+ *     transform: {
+ *       id: (i) => `USER-${i + 1}`,
+ *       name: (i) => `User ${i + 1}`
  *     }
  *   }
  * });
