@@ -10,14 +10,12 @@ describe('generateMocks', () => {
     role: 'user' as const,
   }
 
-  describe('sequence option', () => {
+  describe('transform option', () => {
     test('should apply sequential values to specified properties', () => {
       const result = generateMocks(baseUser, 3, {
-        sequence: {
-          properties: {
-            id: i => `USER-${i + 1}`,
-            email: i => `user${i + 1}@email.com`,
-          },
+        transform: {
+          id: ({ index }) => `USER-${index + 1}`,
+          email: ({ index }) => `user${index + 1}@email.com`,
         },
       })
 
@@ -30,10 +28,8 @@ describe('generateMocks', () => {
 
     test('should handle single sequenced property', () => {
       const result = generateMocks(baseUser, 2, {
-        sequence: {
-          properties: {
-            id: i => `USER-${i + 1}`,
-          },
+        transform: {
+          id: ({ index }) => `USER-${index + 1}`,
         },
       })
 
@@ -45,10 +41,8 @@ describe('generateMocks', () => {
 
     test('should maintain non-sequenced properties', () => {
       const result = generateMocks(baseUser, 2, {
-        sequence: {
-          properties: {
-            id: i => `USER-${i + 1}`,
-          },
+        transform: {
+          id: ({ index }) => `USER-${index + 1}`,
         },
       })
 
@@ -58,108 +52,32 @@ describe('generateMocks', () => {
 
     test('should handle count of 1', () => {
       const result = generateMocks(baseUser, 1, {
-        sequence: {
-          properties: {
-            id: i => `USER-${i + 1}`,
-          },
+        transform: {
+          id: ({ index }) => `USER-${index + 1}`,
         },
       })
 
       expect(result).toHaveLength(1)
       expect(result[0]).toEqual({ ...baseUser, id: 'USER-1' })
     })
-  })
-})
-
-describe('transform option', () => {
-  const baseUser = {
-    id: 'default-id',
-    name: 'John Smith',
-    email: 'john@email.com',
-    createdAt: new Date(),
-    lastLoginDate: new Date(),
-    loginCount: 0,
-  }
-
-  test('should apply transform to each item', () => {
-    const baseDate = new Date('2024-01-01')
-
-    const result = generateMocks(baseUser, 3, {
-      transform: ({ index }) => ({
-        createdAt: new Date(baseDate.getTime() + (index * 24 * 60 * 60 * 1000)),
-        loginCount: index * 10,
-      }),
-    })
-
-    expect(result).toEqual([
-      { ...baseUser, createdAt: new Date('2024-01-01'), loginCount: 0 },
-      { ...baseUser, createdAt: new Date('2024-01-02'), loginCount: 10 },
-      { ...baseUser, createdAt: new Date('2024-01-03'), loginCount: 20 },
-    ])
-  })
-
-  test('should work with sequence and random features', () => {
-    const result = generateMocks(baseUser, 2, {
-      sequence: {
-        properties: {
-          id: i => `USER-${i + 1}`,
+    test('integrates with Faker', () => {
+      const result = generateMocks(baseUser, 3, {
+        transform: {
+          id: ({ index }) => `USER-${index + 1}`,
+          email: ({ index }) => `user${index + 1}@email.com`,
         },
-      },
-      transform: ({ item, index }) => ({
-        lastLoginDate: new Date(item.createdAt.getTime() + (index * 60 * 60 * 1000)), // 1 hour apart,
-      }),
+      })
+
+      expect(result).toStrictEqual([
+        { ...baseUser, id: 'USER-1', email: 'user1@email.com' },
+        { ...baseUser, id: 'USER-2', email: 'user2@email.com' },
+        { ...baseUser, id: 'USER-3', email: 'user3@email.com' },
+      ])
     })
-
-    expect(result[0].id).toBe('USER-1')
-    expect(result[1].id).toBe('USER-2')
-    expect(result[1].lastLoginDate.getTime() - result[0].lastLoginDate.getTime()).toBe(60 * 60 * 1000)
-  })
-
-  test('should receive correct index in transform', () => {
-    const indices: number[] = []
-
-    generateMocks(baseUser, 3, {
-      transform: ({ item, index }) => {
-        indices.push(index)
-        return item
-      },
-    })
-
-    expect(indices).toEqual([0, 1, 2])
   })
 })
 
 describe('zodObjectBuilder with transform option', () => {
-  test('should generate sequenced mocks when count and sequnece is provided', () => {
-    const currentDate = new Date('2024-01-01T00:00:00.000Z')
-    const UserSchema = z.object({
-      id: z.string().default('default-id'),
-      name: z.string().default('John Smith'),
-      email: z.string().email().default('john@email.com'),
-      role: z.enum(['admin', 'user']).default('user'),
-      lastLoginDate: z.date().default(currentDate),
-    })
-    const defaultValues = UserSchema.parse({})
-
-    const result = zodObjectBuilder({
-      schema: UserSchema,
-      config: {
-        count: 3,
-        transform: ({ index }) => ({
-          lastLoginDate: new Date(currentDate.getTime() + (index * 60 * 60 * 1000)), // 1 hour apart,
-        }),
-      },
-    })
-
-    expect(result).toEqual([
-      { ...defaultValues, lastLoginDate: new Date('2024-01-01T00:00:00.000Z') },
-      { ...defaultValues, lastLoginDate: new Date('2024-01-01T01:00:00.000Z') },
-      { ...defaultValues, lastLoginDate: new Date('2024-01-01T02:00:00.000Z') },
-    ])
-  })
-})
-
-describe('zodObjectBuilder with sequence option', () => {
   const UserSchema = z.object({
     id: z.string().default('default-id'),
     name: z.string().default('John Smith'),
@@ -173,11 +91,9 @@ describe('zodObjectBuilder with sequence option', () => {
       schema: UserSchema,
       config: {
         count: 3,
-        sequence: {
-          properties: {
-            id: i => `USER-${i + 1}`,
-            email: i => `user${i + 1}@email.com`,
-          },
+        transform: {
+          id: ({ index }) => `USER-${index + 1}`,
+          email: ({ index }) => `user${index + 1}@email.com`,
         },
       },
     })
@@ -193,10 +109,8 @@ describe('zodObjectBuilder with sequence option', () => {
     const result = zodObjectBuilder({
       schema: UserSchema,
       config: {
-        sequence: {
-          properties: {
-            id: i => `USER-${i + 1}`,
-          },
+        transform: {
+          id: ({ index }) => `USER-${index + 1}`,
         },
       },
       overrides: [{ name: 'Alice' }, { name: 'Bob' }],
@@ -212,10 +126,8 @@ describe('zodObjectBuilder with sequence option', () => {
     const result = zodObjectBuilder({
       schema: UserSchema,
       config: {
-        sequence: {
-          properties: {
-            id: i => `USER-${i + 1}`,
-          },
+        transform: {
+          id: ({ index }) => `USER-${index + 1}`,
         },
       },
     })

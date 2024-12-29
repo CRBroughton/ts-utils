@@ -28,57 +28,35 @@ interface BaseConfig<T extends z.ZodObject<ZodRawShape>> {
   count?: number
 
   /**
-   * Generate sequential values for specific properties.
+   * Transform specific properties using the current item and index.
    * Each property must be a key from the schema.
    * @example
-   * sequence: {
+   * transform: {
    *   properties: {
-   *     id: (i) => `USER-${i + 1}`,
-   *     email: (i) => `user${i + 1}@example.com`
+   *     id: ({ index }) => `USER-${index + 1}`,
+   *     email: ({ item, index }) => `user${item.id}-${index + 1}@example.com`
    *   }
    * }
    */
-  sequence?: {
-    properties: {
-      [K in keyof z.infer<T>]?: (index: number) => z.infer<T>[K]
-    }
-  }
-  /**
-   * Transform each generated item.
-   * Useful for adding computed fields or modifying existing ones.
-   * @param item The generated item before transformation
-   * @param index The index of the current item
-   */
-  transform?: ({ item, index }: { item: z.infer<T>, index: number }) => {
-    [K in keyof z.infer<T>]?: z.infer<T>[K]
+  transform?: {
+    [K in keyof z.infer<T>]?: ({ item, index }: { item: z.infer<T>, index: number }) => z.infer<T>[K]
   }
 }
 
 interface GenerateConfig<T> {
   /**
-   * Generate sequential values for specific properties.
+   * Transform specific properties using the current item and index.
    * Each property must be a key from the schema.
    * @example
-   * sequence: {
+   * transform: {
    *   properties: {
-   *     id: (i) => `USER-${i + 1}`,
-   *     email: (i) => `user${i + 1}@example.com`
+   *     id: ({ index }) => `USER-${index + 1}`,
+   *     email: ({ item, index }) => `user${item.id}-${index + 1}@example.com`
    *   }
    * }
    */
-  sequence?: {
-    properties: {
-      [K in keyof T]?: (index: number) => T[K]
-    }
-  }
-  /**
-   * Transform each generated item.
-   * Useful for adding computed fields or modifying existing ones.
-   * @param item The generated item before transformation
-   * @param index The index of the current item
-   */
-  transform?: ({ item, index }: { item: T, index: number }) => {
-    [K in keyof T]?: T[K]
+  transform?: {
+    [K in keyof T]?: ({ item, index }: { item: T, index: number }) => T[K]
   }
 }
 export function generateMocks<T>(
@@ -89,20 +67,13 @@ export function generateMocks<T>(
   const items: T[] = []
 
   for (let i = 0; i < count; i++) {
-    let item = { ...base }
-    if (config.sequence) {
-      for (const [key, fn] of Object.entries(config.sequence.properties)) {
-        const sequenceFn = fn as (index: number) => T[keyof T]
-        item[key as keyof T] = sequenceFn(i)
-      }
-    }
-
+    const item = { ...base }
     if (config.transform) {
-      const transformed = config.transform({
-        index: i,
-        item,
-      })
-      item = { ...item, ...transformed }
+      for (const [key, fn] of Object.entries(config.transform,
+      )) {
+        const transformFn = fn as (params: { item: T, index: number }) => T[keyof T]
+        item[key as keyof T] = transformFn({ item, index: i })
+      }
     }
 
     items.push(item)
