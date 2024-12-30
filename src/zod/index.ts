@@ -42,6 +42,25 @@ export type SchemaTransforms<T> = {
   }) => T[K]
 }
 
+type Transform<T extends z.ZodObject<ZodRawShape>> = {
+  [K in keyof z.infer<T>]?: (params: {
+    item: z.infer<T>
+    index: number
+  }) => z.infer<T>[K]
+}
+
+
+interface BatchConfig<T extends z.ZodObject<ZodRawShape>> {
+  /**
+   * Number of items to generate in this batch
+   */
+  count: number
+  /**
+   * Transform functions for this specific batch
+   */
+  transform?: Transform<T>
+}
+
 /**
  * Configuration options for the zodObjectBuilder.
  */
@@ -74,9 +93,22 @@ interface BaseConfig<T extends z.ZodObject<ZodRawShape>> {
    *   email: ({ item, index }) => `user${item.id}-${index + 1}@example.com`
    * }
    */
-  transform?: {
-    [K in keyof z.infer<T>]?: ({ item, index }: { item: z.infer<T>, index: number }) => z.infer<T>[K]
-  }
+  transform?: Transform<T>
+
+    /**
+   * Generate multiple batches of items with different transforms
+   * @example
+   * zodObjectBuilder({
+   *   schema: UserSchema,
+   *   config: {
+   *     batchTransform: [
+   *       { count: 3, transform: { role: () => 'admin' } },
+   *       { count: 7, transform: { role: () => 'user' } }
+   *     ]
+   *   }
+   * })
+   */
+    batchTransform?: BatchConfig<T>[]
 
   /**
   * Process the array of generated items before returning.
@@ -463,48 +495,68 @@ export function zodObjectBuilder<T extends z.ZodObject<ZodRawShape>>({
   /** Configuration options for controlling how mocks are generated */
   config?: BaseConfig<T>
 }): z.infer<T>[] | z.infer<T> {
-  if (overrides && Array.isArray(overrides)) {
-    const objects: z.infer<T>[] = []
-    overrides.forEach((override) => {
+  if (overrides) {
+    if (Array.isArray(overrides)) {
+      const objects: z.infer<T>[] = []
+      overrides.forEach((override) => {
+        if (config.preserveNestedDefaults) {
+          const base = buildDefaultObject(schema)
+          const newObject = mergeWithArrayHandling(base, override)
+          objects.push(newObject)
+        }
+        else {
+          const base = schema.parse({})
+          objects.push({ ...base, ...override })
+        }
+      })
+
+      if (config.afterGenerate) {
+        return config.afterGenerate(objects)
+      }
+
+      return objects
+    }
+    else {
       if (config.preserveNestedDefaults) {
         const base = buildDefaultObject(schema)
-        const newObject = mergeWithArrayHandling(base, override)
-        objects.push(newObject)
+        return mergeWithArrayHandling(base, overrides)
       }
       else {
         const base = schema.parse({})
-        objects.push({ ...base, ...override })
+        return { ...base, ...overrides }
       }
-    })
+    }
+  }
+
+  if (config.batchTransform) {
+    const base = buildDefaultObject(schema)
+    const allItems: z.infer<T>[] = []
+
+    for (const batch of config.batchTransform) {
+      const batchItems = generateMocks(base, batch.count, {
+        transform: batch.transform
+      })
+      allItems.push(...batchItems)
+    }
 
     if (config.afterGenerate) {
-      return config.afterGenerate(objects)
+      return config.afterGenerate(allItems)
     }
 
-    return objects
+    return allItems
   }
-  else if (overrides) {
-    if (config.preserveNestedDefaults) {
-      const base = buildDefaultObject(schema)
-      return mergeWithArrayHandling(base, overrides)
-    }
-    else {
-      const base = schema.parse({})
-      return { ...base, ...overrides }
-    }
-  }
-  else {
-    const base = buildDefaultObject(schema)
 
-    if (config.count && config.count > 0) {
-      const items = generateMocks(base, config.count, config)
-      if (config.afterGenerate) {
-        return config.afterGenerate(items)
-      }
-      return items
+  const base = buildDefaultObject(schema)
+
+  if (config.count && config.count > 0) {
+    const items = generateMocks(base, config.count, config)
+    if (config.afterGenerate) {
+      return config.afterGenerate(items)
     }
-    return [base]
+    return items
   }
+
+  return [base]
 }
 
 /**

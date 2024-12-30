@@ -65,6 +65,12 @@ const UserSchema = z.object({
   })
 });
 
+// Create default object(nested in an array) with no overrides
+const defaultUsers = zodObjectBuilder({
+  schema: UserSchema
+});
+
+
 // Create a single object with overrides
 const user = zodObjectBuilder({
   schema: UserSchema,
@@ -80,11 +86,6 @@ const users = zodObjectBuilder({
   ]
 });
 
-// Create default object(nested in an array) with no overrides
-const defaultUsers = zodObjectBuilder({
-  schema: UserSchema
-});
-
 // Preserve nested defaults with overrides
 const userWithDefaults = zodObjectBuilder({
   schema: UserSchema,
@@ -97,15 +98,35 @@ const sequentialUsers = zodObjectBuilder({
   schema: UserSchema,
   config: {
     count: 3,
-    sequence: {
-      properties: {
-        id: (i) => `USER-${i + 1}`,
-        name: (i) => `User ${i + 1}`
-       }
+    transform: {
+      id: (i) => `USER-${i + 1}`,
+      name: (i) => `User ${i + 1}`
     }
   }
 });
- /
+
+// Generate multiple batches with different transforms
+const mixedUsers = zodObjectBuilder({
+  schema: UserSchema,
+  config: {
+    batches: [
+      { 
+        count: 2, 
+        transform: {
+          id: ({ index }) => `ADMIN-${index + 1}`,
+          role: () => 'admin' as const
+        }
+      },
+      { 
+        count: 3, 
+        transform: {
+          id: ({ index }) => `USER-${index + 1}`,
+          role: () => 'user' as const
+        }
+      }
+    ]
+  }
+})
 
 ```
 ## Development Installation

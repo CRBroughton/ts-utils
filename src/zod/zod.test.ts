@@ -2,6 +2,150 @@ import { describe, expect, test } from 'bun:test'
 import { z } from 'zod'
 import { buildDefaultObject, generateMocks, mergeWithArrayHandling, zodObjectBuilder, type SchemaTransforms } from '.'
 
+describe('zodObjectBuilder batches', () => {
+  const UserSchema = z.object({
+    id: z.string().default('default-id'),
+    name: z.string().default('John Smith'),
+    email: z.string().email().default('john@email.com'),
+    role: z.enum(['admin', 'user']).default('user')
+  })
+ 
+  test('should generate different batches with different transforms', () => {
+    const result = zodObjectBuilder({
+      schema: UserSchema,
+      config: {
+        batchTransform: [
+          { 
+            count: 2, 
+            transform: {
+              id: ({ index }) => `ADMIN-${index + 1}`,
+              role: () => 'admin' as const,
+            }
+          },
+          { 
+            count: 3, 
+            transform: {
+              id: ({ index }) => `USER-${index + 1}`,
+              role: () => 'user' as const
+            }
+          }
+        ]
+      }
+    })
+ 
+    expect(result).toEqual([
+      { ...UserSchema.parse({}), id: 'ADMIN-1', role: 'admin' },
+      { ...UserSchema.parse({}), id: 'ADMIN-2', role: 'admin' },
+      { ...UserSchema.parse({}), id: 'USER-1', role: 'user' },
+      { ...UserSchema.parse({}), id: 'USER-2', role: 'user' },
+      { ...UserSchema.parse({}), id: 'USER-3', role: 'user' }
+    ])
+  })
+ 
+  test('should work with afterGenerate', () => {
+    const result = zodObjectBuilder({
+      schema: UserSchema,
+      config: {
+        batchTransform: [
+          { 
+            count: 2,
+            transform: { role: () => 'admin' as const }
+          },
+          { 
+            count: 2,
+            transform: { role: () => 'user' as const }
+          }
+        ],
+        afterGenerate: (items) => {
+          return [...items].sort((a, b) => a.role.localeCompare(a.role))
+        }
+      },
+    })
+ 
+    expect(result.map(item => item.role)).toEqual([
+      'admin', 'admin', 'user', 'user'
+    ])
+  })
+ 
+  test('should maintain schema defaults for untransformed fields', () => {
+    const result = zodObjectBuilder({
+      schema: UserSchema,
+      config: {
+        batchTransform: [
+          { 
+            count: 1,
+            transform: { id: () => 'custom-id' }
+          }
+        ]
+      }
+    })
+ 
+    expect(result).toEqual([
+      {
+        id: 'custom-id',
+        name: 'John Smith',
+        email: 'john@email.com',
+        role: 'user'
+      }
+    ])
+  })
+ 
+  test('each batch should have independent transforms', () => {
+    const result = zodObjectBuilder({
+      schema: UserSchema,
+      config: {
+        batchTransform: [
+          { 
+            count: 2,
+            transform: {
+              name: ({ index }) => `Admin ${index + 1}`,
+              role: () => 'admin' as const
+            }
+          },
+          { 
+            count: 2,
+            transform: {
+              name: ({ index }) => `User ${index + 1}`,
+              role: () => 'user' as const
+            }
+          }
+        ]
+      }
+    })
+ 
+    expect(result.map(item => ({ name: item.name, role: item.role }))).toEqual([
+      { name: 'Admin 1', role: 'admin' },
+      { name: 'Admin 2', role: 'admin' },
+      { name: 'User 1', role: 'user' },
+      { name: 'User 2', role: 'user' }
+    ])
+  })
+  test('overrides should take priority over batches', () => {
+    const result = zodObjectBuilder({
+      schema: UserSchema,
+      config: {
+        batchTransform: [
+          { 
+            count: 2,
+            transform: { 
+              name: () => 'This should not show up in the result'
+            }
+          }
+        ]
+      },
+      overrides: [
+        { name: 'Override 1' },
+        { name: 'Override 2' }
+      ],
+    })
+  
+    expect(result).toEqual([
+      { ...UserSchema.parse({}), name: 'Override 1' },
+      { ...UserSchema.parse({}), name: 'Override 2' }
+    ])
+  })
+ })
+
 describe('zodObjectBuilder afterGenerate', () => {
   const UserSchema = z.object({
     id: z.string().default('default-id'),
