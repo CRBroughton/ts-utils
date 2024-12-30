@@ -109,7 +109,7 @@ const sequentialUsers = zodObjectBuilder({
 const mixedUsers = zodObjectBuilder({
   schema: UserSchema,
   options: {
-    batches: [
+    batchTransform: [
       { 
         count: 2, 
         transform: {
