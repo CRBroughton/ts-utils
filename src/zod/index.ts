@@ -24,7 +24,7 @@ type DeepPartial<T> = T extends object ? {
  * 
  * const result = zodObjectBuilder({
  *   schema: UserSchema,
- *   config: {
+ *   options: {
  *     count: 3,
  *     transform: transforms
  *   }
@@ -50,7 +50,7 @@ type Transform<T extends z.ZodObject<ZodRawShape>> = {
 }
 
 
-interface BatchConfig<T extends z.ZodObject<ZodRawShape>> {
+interface BatchOptions<T extends z.ZodObject<ZodRawShape>> {
   /**
    * Number of items to generate in this batch
    */
@@ -62,16 +62,21 @@ interface BatchConfig<T extends z.ZodObject<ZodRawShape>> {
 }
 
 /**
- * Configuration options for the zodObjectBuilder.
+ * Configuration options for the zodObjectBuilder
  */
-interface BaseConfig<T extends z.ZodObject<ZodRawShape>> {
+interface BaseConfig {
   /**
    * When true, preserves default values in nested objects when merging overrides.
    * This is useful when you want to retain schema defaults while overriding specific fields.
    * @default false
    */
   preserveNestedDefaults?: boolean
+}
 
+/**
+ * Options for the zodObjectBuilder.
+ */
+interface Options<T extends z.ZodObject<ZodRawShape>> {
   /**
    * Generates the specified number of mocks using schema defaults.
    * Only applies when no overrides are provided.
@@ -79,7 +84,7 @@ interface BaseConfig<T extends z.ZodObject<ZodRawShape>> {
    * // Generate 5 users with default values
    * zodObjectBuilder({
    *   schema: UserSchema,
-   *   config: { count: 5 }
+   *   options: { count: 5 }
    * })
    */
   count?: number
@@ -100,7 +105,7 @@ interface BaseConfig<T extends z.ZodObject<ZodRawShape>> {
    * @example
    * zodObjectBuilder({
    *   schema: UserSchema,
-   *   config: {
+   *   options: {
    *     batchTransform: [
    *       { count: 3, transform: { role: () => 'admin' } },
    *       { count: 7, transform: { role: () => 'user' } }
@@ -108,7 +113,7 @@ interface BaseConfig<T extends z.ZodObject<ZodRawShape>> {
    *   }
    * })
    */
-    batchTransform?: BatchConfig<T>[]
+  batchTransform?: BatchOptions<T>[]
 
   /**
   * Process the array of generated items before returning.
@@ -120,7 +125,7 @@ interface BaseConfig<T extends z.ZodObject<ZodRawShape>> {
   * @example
   * zodObjectBuilder({
   *   schema: UserSchema,
-  *   config: {
+  *   options: {
   *     count: 3,
   *     transform: {
   *       name: ({ index }) => `User ${index + 1}`
@@ -157,7 +162,7 @@ interface GenerateConfig<T> {
   * @example
   * zodObjectBuilder({
   *   schema: UserSchema,
-  *   config: {
+  *   options: {
   *     count: 3,
   *     transform: {
   *       name: ({ index }) => `User ${index + 1}`
@@ -174,14 +179,14 @@ interface GenerateConfig<T> {
 export function generateMocks<T>(
   base: T,
   count: number,
-  config: GenerateConfig<T>,
+  options: GenerateConfig<T>,
 ): T[] {
   const items: T[] = []
 
   for (let i = 0; i < count; i++) {
     const item = { ...base }
-    if (config.transform) {
-      for (const [key, fn] of Object.entries(config.transform,
+    if (options.transform) {
+      for (const [key, fn] of Object.entries(options.transform,
       )) {
         const transformFn = fn as (params: { item: T, index: number }) => T[keyof T]
         item[key as keyof T] = transformFn({ item, index: i })
@@ -192,8 +197,8 @@ export function generateMocks<T>(
   }
 
   
- if (config.afterGenerate) {
-  return config.afterGenerate(items)
+ if (options.afterGenerate) {
+  return options.afterGenerate(items)
 }
 
   return items
@@ -205,6 +210,7 @@ export function generateMocks<T>(
  * @param params Configuration object for the builder
  * @param params.schema - Zod schema that defines the shape and validation rules for the objects
  * @param params.overrides - Optional override values. Can be either a single partial object or an array of partial objects
+ * @param params.options - Options for controlling how mocks are generated
  * @param params.config - Optional configuration object
  * @param params.config.preserveNestedDefaults - When true, preserves default values in nested objects when merging overrides
  *
@@ -254,7 +260,7 @@ export function generateMocks<T>(
  * // Generate multiple objects with sequential values
  * const sequentialUsers = zodObjectBuilder({
  *   schema: UserSchema,
- *   config: {
+ *   options: {
  *     count: 3,
  *     transform: {
  *       id: (i) => `USER-${i + 1}`,
@@ -266,10 +272,12 @@ export function generateMocks<T>(
 export function zodObjectBuilder<T extends z.ZodObject<ZodRawShape>>(params: {
   /** The Zod schema that defines the shape of the returned mocks */
   schema: T
+  /** Configuration options for controlling how mocks are generated */
+  config?: BaseConfig
+  /** Options for controlling how mocks are generated */
+  options?: Options<T>
   /** Optional override values. Can be a single object or array of objects */
   overrides: DeepPartial<z.infer<T>>
-  /** Configuration options for controlling how mocks are generated */
-  config?: BaseConfig<T>
 }): z.infer<T>
 
 /**
@@ -279,6 +287,7 @@ export function zodObjectBuilder<T extends z.ZodObject<ZodRawShape>>(params: {
  * @param params Configuration object for the builder
  * @param params.schema - Zod schema that defines the shape and validation rules for the objects
  * @param params.overrides - Optional override values. Can be either a single partial object or an array of partial objects
+ * @param params.options - Options for controlling how mocks are generated
  * @param params.config - Optional configuration object
  * @param params.config.preserveNestedDefaults - When true, preserves default values in nested objects when merging overrides
  *
@@ -328,7 +337,7 @@ export function zodObjectBuilder<T extends z.ZodObject<ZodRawShape>>(params: {
  * // Generate multiple objects with sequential values
  * const sequentialUsers = zodObjectBuilder({
  *   schema: UserSchema,
- *   config: {
+ *   options: {
  *     count: 3,
  *     transform: {
  *       id: (i) => `USER-${i + 1}`,
@@ -340,10 +349,12 @@ export function zodObjectBuilder<T extends z.ZodObject<ZodRawShape>>(params: {
 export function zodObjectBuilder<T extends z.ZodObject<ZodRawShape>>(params: {
   /** The Zod schema that defines the shape of the returned mocks */
   schema: T
+  /** Configuration options */
+  config?: BaseConfig
+  /** Options for controlling how mocks are generated */
+  options?: Options<T>
   /** Optional override values. Can be a single object or array of objects */
   overrides: DeepPartial<z.infer<T>>[]
-  /** Configuration options for controlling how mocks are generated */
-  config?: BaseConfig<T>
 }): z.infer<T>[]
 
 /**
@@ -353,6 +364,7 @@ export function zodObjectBuilder<T extends z.ZodObject<ZodRawShape>>(params: {
  * @param params Configuration object for the builder
  * @param params.schema - Zod schema that defines the shape and validation rules for the objects
  * @param params.overrides - Optional override values. Can be either a single partial object or an array of partial objects
+ * @param params.options - Options for controlling how mocks are generated 
  * @param params.config - Optional configuration object
  * @param params.config.preserveNestedDefaults - When true, preserves default values in nested objects when merging overrides
  *
@@ -402,7 +414,7 @@ export function zodObjectBuilder<T extends z.ZodObject<ZodRawShape>>(params: {
  * // Generate multiple objects with sequential values
  * const sequentialUsers = zodObjectBuilder({
  *   schema: UserSchema,
- *   config: {
+ *   options: {
  *     count: 3,
  *     transform: {
  *       id: (i) => `USER-${i + 1}`,
@@ -415,7 +427,9 @@ export function zodObjectBuilder<T extends z.ZodObject<ZodRawShape>>(params: {
   /** The Zod schema that defines the shape of the returned mocks */
   schema: T
   /** Configuration options for controlling how mocks are generated */
-  config?: BaseConfig<T>
+  config?: BaseConfig
+  /** Options for controlling how mocks are generated */
+  options?: Options<T>
 }): z.infer<T>[]
 
 /**
@@ -425,6 +439,7 @@ export function zodObjectBuilder<T extends z.ZodObject<ZodRawShape>>(params: {
  * @param params Configuration object for the builder
  * @param params.schema - Zod schema that defines the shape and validation rules for the objects
  * @param params.overrides - Optional override values. Can be either a single partial object or an array of partial objects
+ * @param params.options - Options for controlling how mocks are generated
  * @param params.config - Optional configuration object
  * @param params.config.preserveNestedDefaults - When true, preserves default values in nested objects when merging overrides
  *
@@ -474,7 +489,7 @@ export function zodObjectBuilder<T extends z.ZodObject<ZodRawShape>>(params: {
  * // Generate multiple objects with sequential values
  * const sequentialUsers = zodObjectBuilder({
  *   schema: UserSchema,
- *   config: {
+ *   options: {
  *     count: 3,
  *     transform: {
  *       id: (i) => `USER-${i + 1}`,
@@ -485,15 +500,18 @@ export function zodObjectBuilder<T extends z.ZodObject<ZodRawShape>>(params: {
  */
 export function zodObjectBuilder<T extends z.ZodObject<ZodRawShape>>({
   schema,
-  overrides,
   config = { preserveNestedDefaults: false },
+  options = {},
+  overrides,
 }: {
   /** The Zod schema that defines the shape of the returned mocks */
   schema: T
+  /** Configuration options */
+  config?: BaseConfig
+  /** Options for controlling how mocks are generated */
+  options?: Options<T>
   /** Optional override values. Can be a single object or array of objects */
   overrides?: DeepPartial<z.infer<T>> | DeepPartial<z.infer<T>>[]
-  /** Configuration options for controlling how mocks are generated */
-  config?: BaseConfig<T>
 }): z.infer<T>[] | z.infer<T> {
   if (overrides) {
     if (Array.isArray(overrides)) {
@@ -510,8 +528,8 @@ export function zodObjectBuilder<T extends z.ZodObject<ZodRawShape>>({
         }
       })
 
-      if (config.afterGenerate) {
-        return config.afterGenerate(objects)
+      if (options.afterGenerate) {
+        return options.afterGenerate(objects)
       }
 
       return objects
@@ -528,19 +546,19 @@ export function zodObjectBuilder<T extends z.ZodObject<ZodRawShape>>({
     }
   }
 
-  if (config.batchTransform) {
+  if (options.batchTransform) {
     const base = buildDefaultObject(schema)
     const allItems: z.infer<T>[] = []
 
-    for (const batch of config.batchTransform) {
+    for (const batch of options.batchTransform) {
       const batchItems = generateMocks(base, batch.count, {
         transform: batch.transform
       })
       allItems.push(...batchItems)
     }
 
-    if (config.afterGenerate) {
-      return config.afterGenerate(allItems)
+    if (options.afterGenerate) {
+      return options.afterGenerate(allItems)
     }
 
     return allItems
@@ -548,10 +566,10 @@ export function zodObjectBuilder<T extends z.ZodObject<ZodRawShape>>({
 
   const base = buildDefaultObject(schema)
 
-  if (config.count && config.count > 0) {
-    const items = generateMocks(base, config.count, config)
-    if (config.afterGenerate) {
-      return config.afterGenerate(items)
+  if (options.count && options.count > 0) {
+    const items = generateMocks(base, options.count, options)
+    if (options.afterGenerate) {
+      return options.afterGenerate(items)
     }
     return items
   }

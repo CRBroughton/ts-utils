@@ -96,7 +96,7 @@ const userWithDefaults = zodObjectBuilder({
 // Generate multiple objects with sequential values
 const sequentialUsers = zodObjectBuilder({
   schema: UserSchema,
-  config: {
+  options: {
     count: 3,
     transform: {
       id: (i) => `USER-${i + 1}`,
@@ -108,7 +108,7 @@ const sequentialUsers = zodObjectBuilder({
 // Generate multiple batches with different transforms
 const mixedUsers = zodObjectBuilder({
   schema: UserSchema,
-  config: {
+  options: {
     batches: [
       { 
         count: 2, 

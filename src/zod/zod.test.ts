@@ -13,7 +13,7 @@ describe('zodObjectBuilder batches', () => {
   test('should generate different batches with different transforms', () => {
     const result = zodObjectBuilder({
       schema: UserSchema,
-      config: {
+      options: {
         batchTransform: [
           { 
             count: 2, 
@@ -45,7 +45,7 @@ describe('zodObjectBuilder batches', () => {
   test('should work with afterGenerate', () => {
     const result = zodObjectBuilder({
       schema: UserSchema,
-      config: {
+      options: {
         batchTransform: [
           { 
             count: 2,
@@ -70,7 +70,7 @@ describe('zodObjectBuilder batches', () => {
   test('should maintain schema defaults for untransformed fields', () => {
     const result = zodObjectBuilder({
       schema: UserSchema,
-      config: {
+      options: {
         batchTransform: [
           { 
             count: 1,
@@ -93,7 +93,7 @@ describe('zodObjectBuilder batches', () => {
   test('each batch should have independent transforms', () => {
     const result = zodObjectBuilder({
       schema: UserSchema,
-      config: {
+      options: {
         batchTransform: [
           { 
             count: 2,
@@ -123,7 +123,7 @@ describe('zodObjectBuilder batches', () => {
   test('overrides should take priority over batches', () => {
     const result = zodObjectBuilder({
       schema: UserSchema,
-      config: {
+      options: {
         batchTransform: [
           { 
             count: 2,
@@ -157,7 +157,7 @@ describe('zodObjectBuilder afterGenerate', () => {
   test('can sort generated items', () => {
     const result = zodObjectBuilder({
       schema: UserSchema,
-      config: {
+      options: {
         count: 3,
         transform: {
           id: ({ index }) => `USER-${index + 1}`,
@@ -178,7 +178,7 @@ describe('zodObjectBuilder afterGenerate', () => {
   test('can add derived data', () => {
     const result = zodObjectBuilder({
       schema: UserSchema,
-      config: {
+      options: {
         count: 3,
         transform: {
           name: ({ index }) => `User ${index + 1}`
@@ -202,7 +202,7 @@ describe('zodObjectBuilder afterGenerate', () => {
   test('works with overrides array', () => {
     const result = zodObjectBuilder({
       schema: UserSchema,
-      config: {
+      options: {
         afterGenerate: (items) => {
           return [...items].sort((a, b) => b.name.localeCompare(a.name))
         }
@@ -224,7 +224,7 @@ describe('zodObjectBuilder afterGenerate', () => {
   test('should not affect single item override', () => {
     const result = zodObjectBuilder({
       schema: UserSchema,
-      config: {
+      options: {
         afterGenerate: (items) => {
           return items.map(item => ({ ...item, name: 'Modified' }))
         }
@@ -329,7 +329,7 @@ describe('zodObjectBuilder with transform option', () => {
   
     const result = zodObjectBuilder({
       schema: UserSchema,
-      config: {
+      options: {
         count: 3,
         transform: transforms
       }
@@ -346,7 +346,7 @@ describe('zodObjectBuilder with transform option', () => {
 
     const result = zodObjectBuilder({
       schema: UserSchema,
-      config: {
+      options: {
         count: 3,
         transform: {
           id: ({ index }) => `USER-${index + 1}`,
@@ -365,7 +365,7 @@ describe('zodObjectBuilder with transform option', () => {
   test('should ignore sequence when overrides are provided', () => {
     const result = zodObjectBuilder({
       schema: UserSchema,
-      config: {
+      options: {
         transform: {
           id: ({ index }) => `USER-${index + 1}`,
         },
@@ -382,7 +382,7 @@ describe('zodObjectBuilder with transform option', () => {
   test('should require count when using sequence', () => {
     const result = zodObjectBuilder({
       schema: UserSchema,
-      config: {
+      options: {
         transform: {
           id: ({ index }) => `USER-${index + 1}`,
         },
@@ -405,7 +405,7 @@ describe('zodObjectBuilder', () => {
 
     const actual = zodObjectBuilder({
       schema,
-      config: {
+      options: {
         count: 4,
       },
     })
@@ -439,7 +439,7 @@ describe('zodObjectBuilder', () => {
 
     const actual = zodObjectBuilder({
       schema,
-      config: {
+      options: {
         count: 4,
       },
       overrides: { bar: true },
