@@ -2,6 +2,141 @@ import { describe, expect, test } from 'bun:test'
 import { z } from 'zod'
 import { buildDefaultObject, generateMocks, mergeWithArrayHandling, zodObjectBuilder, type SchemaTransforms } from '.'
 
+describe('zodObjectBuilder with transforms and batchTransforms', () => {
+  const UserSchema = z.object({
+    id: z.string().default('default-id'),
+    name: z.string().default('John Smith'),
+    email: z.string().email().default('john@email.com'),
+    role: z.enum(['admin', 'user']).default('user')
+  })
+ 
+  test('should only apply batch transforms when allowOverlappingTransforms is false', () => {
+    const result = zodObjectBuilder({
+      schema: UserSchema,
+      config: {
+        allowOverlappingTransforms: false
+      },
+      options: {
+        transform: {
+          id: ({ index }) => `USER-${index + 1}` // Should be ignored
+        },
+        batchTransform: [
+          {
+            count: 2,
+            transform: {
+              id: ({ index }) => `ADMIN-${index + 1}`,
+              role: () => 'admin' as const
+            }
+          },
+          {
+            count: 1,
+            transform: {
+              id: ({ index }) => `USER-${index + 1}`,
+              role: () => 'user' as const
+            }
+          }
+        ]
+      }
+    })
+ 
+    expect(result).toEqual([
+      { ...UserSchema.parse({}), id: 'ADMIN-1', role: 'admin' },
+      { ...UserSchema.parse({}), id: 'ADMIN-2', role: 'admin' },
+      { ...UserSchema.parse({}), id: 'USER-1', role: 'user' }
+    ])
+  })
+ 
+  test('should apply global transforms first when allowOverlappingTransforms is true', () => {
+    const result = zodObjectBuilder({
+      schema: UserSchema,
+      config: {
+        allowOverlappingTransforms: true
+      },
+      options: {
+        transform: {
+          email: ({ item }) => `${item.name.toLowerCase()}@example.com`
+        },
+        batchTransform: [
+          {
+            count: 2,
+            transform: {
+              name: ({ index }) => `Admin ${index + 1}`
+            }
+          }
+        ]
+      }
+    })
+ 
+    expect(result).toEqual([
+      { ...UserSchema.parse({}), name: 'Admin 1', email: 'admin 1@example.com' },
+      { ...UserSchema.parse({}), name: 'Admin 2', email: 'admin 2@example.com' }
+    ])
+  })
+ 
+  test('should allow batch transforms to override global transforms when enabled', () => {
+    const result = zodObjectBuilder({
+      schema: UserSchema,
+      config: {
+        allowOverlappingTransforms: true
+      },
+      options: {
+        transform: {
+          id: ({ index }) => `GLOBAL-${index + 1}`,
+          name: ({ index }) => `User ${index + 1}`
+        },
+        batchTransform: [
+          {
+            count: 2,
+            transform: {
+              id: ({ index }) => `BATCH-${index + 1}`
+            }
+          }
+        ]
+      }
+    })
+ 
+    // Batch transform overrides 'id', but global 'name' transform remains
+    expect(result).toEqual([
+      { ...UserSchema.parse({}), id: 'BATCH-1', name: 'User 1' },
+      { ...UserSchema.parse({}), id: 'BATCH-2', name: 'User 2' }
+    ])
+  })
+ 
+  test('should maintain independent indices for each batch', () => {
+    const result = zodObjectBuilder({
+      schema: UserSchema,
+      config: {
+        allowOverlappingTransforms: true
+      },
+      options: {
+        transform: {
+          email: ({ index }) => `global${index + 1}@example.com`
+        },
+        batchTransform: [
+          {
+            count: 2,
+            transform: {
+              id: ({ index }) => `FIRST-${index + 1}`
+            }
+          },
+          {
+            count: 1,
+            transform: {
+              id: ({ index }) => `SECOND-${index + 1}`
+            }
+          }
+        ]
+      }
+    })
+ 
+    expect(result).toEqual([
+      { ...UserSchema.parse({}), id: 'FIRST-1', email: 'global1@example.com' },
+      { ...UserSchema.parse({}), id: 'FIRST-2', email: 'global2@example.com' },
+      { ...UserSchema.parse({}), id: 'SECOND-1', email: 'global3@example.com' }
+    ])
+  })
+ })
+
 describe('zodObjectBuilder batches', () => {
   const UserSchema = z.object({
     id: z.string().default('default-id'),

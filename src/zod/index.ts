@@ -7,7 +7,7 @@ type DeepPartial<T> = T extends object ? {
 /**
  * Create type-safe transform functions based on your Zod schema.
  * Use this to create reusable, schema-validated transformations for generating mock data.
- * 
+ *
  * @example
  * const UserSchema = z.object({
  *   id: z.string().default('default-id'),
@@ -15,13 +15,13 @@ type DeepPartial<T> = T extends object ? {
  *   email: z.string().email().default('john@email.com'),
  *   role: z.enum(['admin', 'user']).default('user')
  * })
- * 
+ *
  * const transforms: SchemaTransforms<z.infer<typeof UserSchema>> = {
  *   id: ({ index }) => `USER-${index + 1}`,
  *   email: ({ index }) => `user${index + 1}@example.com`,
  *   // role and name will use schema defaults if not specified
  * }
- * 
+ *
  * const result = zodObjectBuilder({
  *   schema: UserSchema,
  *   options: {
@@ -49,7 +49,6 @@ type Transform<T extends z.ZodObject<ZodRawShape>> = {
   }) => z.infer<T>[K]
 }
 
-
 interface BatchOptions<T extends z.ZodObject<ZodRawShape>> {
   /**
    * Number of items to generate in this batch
@@ -71,6 +70,7 @@ interface BaseConfig {
    * @default false
    */
   preserveNestedDefaults?: boolean
+  allowOverlappingTransforms?: boolean
 }
 
 /**
@@ -100,7 +100,7 @@ interface Options<T extends z.ZodObject<ZodRawShape>> {
    */
   transform?: Transform<T>
 
-    /**
+  /**
    * Generate multiple batches of items with different transforms
    * @example
    * zodObjectBuilder({
@@ -116,27 +116,27 @@ interface Options<T extends z.ZodObject<ZodRawShape>> {
   batchTransform?: BatchOptions<T>[]
 
   /**
-  * Process the array of generated items before returning.
-  * Useful for sorting, filtering, or adding derived data across the collection.
-  * 
-  * @param items Array of generated mocks
-  * @returns Processed array of mocks
-  * 
-  * @example
-  * zodObjectBuilder({
-  *   schema: UserSchema,
-  *   options: {
-  *     count: 3,
-  *     transform: {
-  *       name: ({ index }) => `User ${index + 1}`
-  *     },
-  *     afterGenerate: (items) => {
-  *       // Sort users by name
-  *       return [...items].sort((a, b) => a.name.localeCompare(b.name))
-  *     }
-  *   }
-  * })
-  */
+   * Process the array of generated items before returning.
+   * Useful for sorting, filtering, or adding derived data across the collection.
+   *
+   * @param items Array of generated mocks
+   * @returns Processed array of mocks
+   *
+   * @example
+   * zodObjectBuilder({
+   *   schema: UserSchema,
+   *   options: {
+   *     count: 3,
+   *     transform: {
+   *       name: ({ index }) => `User ${index + 1}`
+   *     },
+   *     afterGenerate: (items) => {
+   *       // Sort users by name
+   *       return [...items].sort((a, b) => a.name.localeCompare(b.name))
+   *     }
+   *   }
+   * })
+   */
   afterGenerate?: (items: z.infer<T>[]) => z.infer<T>[]
 }
 
@@ -153,53 +153,49 @@ interface GenerateConfig<T> {
   transform?: SchemaTransforms<T>
 
   /**
-  * Process the array of generated items before returning.
-  * Useful for sorting, filtering, or adding derived data across the collection.
-  * 
-  * @param items Array of generated mocks
-  * @returns Processed array of mocks
-  * 
-  * @example
-  * zodObjectBuilder({
-  *   schema: UserSchema,
-  *   options: {
-  *     count: 3,
-  *     transform: {
-  *       name: ({ index }) => `User ${index + 1}`
-  *     },
-  *     afterGenerate: (items) => {
-  *       // Sort users by name
-  *       return [...items].sort((a, b) => a.name.localeCompare(b.name))
-  *     }
-  *   }
-  * })
-  */
+   * Process the array of generated items before returning.
+   * Useful for sorting, filtering, or adding derived data across the collection.
+   *
+   * @param items Array of generated mocks
+   * @returns Processed array of mocks
+   *
+   * @example
+   * zodObjectBuilder({
+   *   schema: UserSchema,
+   *   options: {
+   *     count: 3,
+   *     transform: {
+   *       name: ({ index }) => `User ${index + 1}`
+   *     },
+   *     afterGenerate: (items) => {
+   *       // Sort users by name
+   *       return [...items].sort((a, b) => a.name.localeCompare(b.name))
+   *     }
+   *   }
+   * })
+   */
   afterGenerate?: (items: T[]) => T[]
 }
 export function generateMocks<T>(
   base: T,
   count: number,
-  options: GenerateConfig<T>,
+  options: GenerateConfig<T> & { index?: number },
 ): T[] {
   const items: T[] = []
 
   for (let i = 0; i < count; i++) {
-    const item = { ...base }
+    let item = { ...base }
     if (options.transform) {
-      for (const [key, fn] of Object.entries(options.transform,
-      )) {
+      for (const [key, fn] of Object.entries(options.transform)) {
         const transformFn = fn as (params: { item: T, index: number }) => T[keyof T]
-        item[key as keyof T] = transformFn({ item, index: i })
+        item[key as keyof T] = transformFn({ 
+          item, 
+          index: options.index !== undefined ? options.index : i 
+        })
       }
     }
-
     items.push(item)
   }
-
-  
- if (options.afterGenerate) {
-  return options.afterGenerate(items)
-}
 
   return items
 }
@@ -364,7 +360,7 @@ export function zodObjectBuilder<T extends z.ZodObject<ZodRawShape>>(params: {
  * @param params Configuration object for the builder
  * @param params.schema - Zod schema that defines the shape and validation rules for the objects
  * @param params.overrides - Optional override values. Can be either a single partial object or an array of partial objects
- * @param params.options - Options for controlling how mocks are generated 
+ * @param params.options - Options for controlling how mocks are generated
  * @param params.config - Optional configuration object
  * @param params.config.preserveNestedDefaults - When true, preserves default values in nested objects when merging overrides
  *
@@ -528,9 +524,8 @@ export function zodObjectBuilder<T extends z.ZodObject<ZodRawShape>>({
         }
       })
 
-      if (options.afterGenerate) {
+      if (options.afterGenerate)
         return options.afterGenerate(objects)
-      }
 
       return objects
     }
@@ -545,32 +540,53 @@ export function zodObjectBuilder<T extends z.ZodObject<ZodRawShape>>({
       }
     }
   }
-
+  
   if (options.batchTransform) {
     const base = buildDefaultObject(schema)
     const allItems: z.infer<T>[] = []
-
+    let globalIndex = 0
+  
     for (const batch of options.batchTransform) {
-      const batchItems = generateMocks(base, batch.count, {
-        transform: batch.transform
-      })
-      allItems.push(...batchItems)
+      for (let batchIndex = 0; batchIndex < batch.count; batchIndex++) {
+        let item = { ...base }
+  
+        // First apply batch transforms
+        if (batch.transform) {
+          for (const [key, fn] of Object.entries(batch.transform)) {
+            const transformFn = fn as (params: { item: z.infer<T>, index: number }) => z.infer<T>[keyof z.infer<T>]
+            item[key as keyof z.infer<T>] = transformFn({ item, index: batchIndex })
+          }
+        }
+  
+        // Then apply global transforms which can use batch-transformed values
+        if (config.allowOverlappingTransforms && options.transform) {
+          for (const [key, fn] of Object.entries(options.transform)) {
+            // Skip if batch transform already handled this key
+            if (batch.transform && key in batch.transform) continue
+            
+            const transformFn = fn as (params: { item: z.infer<T>, index: number }) => z.infer<T>[keyof z.infer<T>]
+            item[key as keyof z.infer<T>] = transformFn({ item, index: globalIndex })
+          }
+        }
+  
+        allItems.push(item)
+        globalIndex++
+      }
     }
-
+  
     if (options.afterGenerate) {
       return options.afterGenerate(allItems)
     }
-
+  
     return allItems
   }
-
   const base = buildDefaultObject(schema)
 
   if (options.count && options.count > 0) {
     const items = generateMocks(base, options.count, options)
-    if (options.afterGenerate) {
+    if (options.afterGenerate)
       return options.afterGenerate(items)
-    }
+
     return items
   }
 
