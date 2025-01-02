@@ -42,11 +42,11 @@ export type SchemaTransforms<T> = {
   }) => T[K]
 }
 
-type Transform<T extends z.ZodObject<ZodRawShape>> = {
+type Transform<T extends z.ZodObject<ZodRawShape>, AllowPartial extends boolean = false> = {
   [K in keyof z.infer<T>]?: (params: {
     item: z.infer<T>
     index: number
-  }) => z.infer<T>[K]
+  }) => AllowPartial extends true ? DeepPartial<z.infer<T>[K]> : z.infer<T>[K]
 }
 
 interface BatchOptions<T extends z.ZodObject<ZodRawShape>> {
@@ -57,7 +57,7 @@ interface BatchOptions<T extends z.ZodObject<ZodRawShape>> {
   /**
    * Transform functions for this specific batch
    */
-  transform?: Transform<T>
+  transform?: Transform<T, true> // Always allow partial transforms in batches
 }
 
 /**
@@ -577,23 +577,24 @@ export function zodObjectBuilder<T extends z.ZodObject<ZodRawShape>>({
 
     for (const batch of options.batchTransform) {
       for (let batchIndex = 0; batchIndex < batch.count; batchIndex++) {
-        const item = { ...base }
+        let item = { ...base }
 
-        // First apply batch transforms
         if (batch.transform) {
+          const transformedValues = {} as Record<keyof z.infer<T>, z.infer<T>[keyof z.infer<T>]>
           for (const [key, fn] of Object.entries(batch.transform)) {
             const transformFn = fn as (params: { item: z.infer<T>, index: number }) => z.infer<T>[keyof z.infer<T>]
-            item[key as keyof z.infer<T>] = transformFn({ item, index: batchIndex })
+            transformedValues[key as keyof z.infer<T>] = transformFn({ item, index: batchIndex })
           }
+
+          item = config.preserveNestedDefaults
+            ? mergeWithArrayHandling(item, transformedValues as DeepPartial<z.infer<T>>)
+            : { ...item, ...transformedValues }
         }
 
-        // Then apply global transforms which can use batch-transformed values
         if (config.allowOverlappingTransforms && options.transform) {
           for (const [key, fn] of Object.entries(options.transform)) {
-            // Skip if batch transform already handled this key
             if (batch.transform && key in batch.transform)
               continue
-
             const transformFn = fn as (params: { item: z.infer<T>, index: number }) => z.infer<T>[keyof z.infer<T>]
             item[key as keyof z.infer<T>] = transformFn({ item, index: globalIndex })
           }

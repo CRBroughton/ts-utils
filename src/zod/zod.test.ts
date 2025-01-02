@@ -771,6 +771,87 @@ describe('zodObjectBuilder', () => {
       },
     ])
   })
+  test('creates a zod object array from a schema (with batch transformations & preserveNestedDefaults)', () => {
+    const schema = z.object(
+      {
+        foo: z.string().default('Hello, World!'),
+        bar: z.boolean().default(false),
+        nestedExample: z.object({
+          nested1: z.string().default('nested1'),
+          nested2: z.object({
+            nestednested1: z.string().default('nested2'),
+          }),
+        }),
+      },
+    )
+
+    const actual = zodObjectBuilder({
+      schema,
+      config: {
+        preserveNestedDefaults: true,
+      },
+      options: {
+        batchTransform: [
+          {
+            count: 1,
+            transform: {
+              foo: () => 'rawr',
+            },
+          },
+          {
+            count: 1,
+            transform: {
+              foo: () => 'rawr2',
+              bar: () => true,
+            },
+          },
+          {
+            count: 1,
+            transform: {
+              nestedExample: () => {
+                return {
+                  nested1: 'nested-one',
+                }
+              },
+            },
+          },
+        ],
+      },
+    })
+
+    expect(actual).toStrictEqual([
+      {
+        foo: 'rawr',
+        bar: false,
+        nestedExample: {
+          nested1: 'nested1',
+          nested2: {
+            nestednested1: 'nested2',
+          },
+        },
+      },
+      {
+        foo: 'rawr2',
+        bar: true,
+        nestedExample: {
+          nested1: 'nested1',
+          nested2: {
+            nestednested1: 'nested2',
+          },
+        },
+      },
+      {
+        foo: 'Hello, World!',
+        bar: false,
+        nestedExample: {
+          nested1: 'nested-one',
+          nested2: {
+            nestednested1: 'nested2',
+          },
+        },
+      },
+    ])
+  })
   test('it properly overrides nested arrays whilst preverse nested defaults', () => {
     const addressSchema = z.object({
       street: z.string(),
