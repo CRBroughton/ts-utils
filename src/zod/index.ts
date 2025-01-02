@@ -108,6 +108,7 @@ interface Options<T extends z.ZodObject<ZodRawShape>> {
   /**
    * Generates the specified number of mocks using schema defaults.
    * Only applies when no overrides are provided.
+   * This feature does not work with batch transformations.
    * @example
    * // Generate 5 users with default values
    * zodObjectBuilder({
@@ -233,7 +234,7 @@ export function generateMocks<T>(
  *
  * @param params Configuration object for the builder
  * @param params.schema - Zod schema that defines the shape and validation rules for the objects
- * @param params.overrides - Optional override values. Can be either a single partial object or an array of partial objects
+ * @param params.overrides - Optional override values. Can be a single object or array of objects. Overrides do not work with any of the configuration options.
  * @param params.options - Options for controlling how mocks are generated
  * @param params.config - Optional configuration object
  * @param params.config.preserveNestedDefaults - When true, preserves default values in nested objects when merging overrides
@@ -300,7 +301,7 @@ export function zodObjectBuilder<T extends z.ZodObject<ZodRawShape>>(params: {
   config?: BaseConfig
   /** Options for controlling how mocks are generated */
   options?: Options<T>
-  /** Optional override values. Can be a single object or array of objects */
+  /** Optional override values. Can be a single object or array of objects. Overrides do not work with any of the configuration options. */
   overrides: DeepPartial<z.infer<T>>
 }): z.infer<T>
 
@@ -310,7 +311,7 @@ export function zodObjectBuilder<T extends z.ZodObject<ZodRawShape>>(params: {
  *
  * @param params Configuration object for the builder
  * @param params.schema - Zod schema that defines the shape and validation rules for the objects
- * @param params.overrides - Optional override values. Can be either a single partial object or an array of partial objects
+ * @param params.overrides - Optional override values. Can be a single object or array of objects. Overrides do not work with any of the configuration options.
  * @param params.options - Options for controlling how mocks are generated
  * @param params.config - Optional configuration object
  * @param params.config.preserveNestedDefaults - When true, preserves default values in nested objects when merging overrides
@@ -377,7 +378,7 @@ export function zodObjectBuilder<T extends z.ZodObject<ZodRawShape>>(params: {
   config?: BaseConfig
   /** Options for controlling how mocks are generated */
   options?: Options<T>
-  /** Optional override values. Can be a single object or array of objects */
+  /** Optional override values. Can be a single object or array of objects. Overrides do not work with any of the configuration options. */
   overrides: DeepPartial<z.infer<T>>[]
 }): z.infer<T>[]
 
@@ -387,7 +388,7 @@ export function zodObjectBuilder<T extends z.ZodObject<ZodRawShape>>(params: {
  *
  * @param params Configuration object for the builder
  * @param params.schema - Zod schema that defines the shape and validation rules for the objects
- * @param params.overrides - Optional override values. Can be either a single partial object or an array of partial objects
+ * @param params.overrides - Optional override values. Can be a single object or array of objects. Overrides do not work with any of the configuration options.
  * @param params.options - Options for controlling how mocks are generated
  * @param params.config - Optional configuration object
  * @param params.config.preserveNestedDefaults - When true, preserves default values in nested objects when merging overrides
@@ -462,7 +463,7 @@ export function zodObjectBuilder<T extends z.ZodObject<ZodRawShape>>(params: {
  *
  * @param params Configuration object for the builder
  * @param params.schema - Zod schema that defines the shape and validation rules for the objects
- * @param params.overrides - Optional override values. Can be either a single partial object or an array of partial objects
+ * @param params.overrides - Optional override values. Can be a single object or array of objects. Overrides do not work with any of the configuration options.
  * @param params.options - Options for controlling how mocks are generated
  * @param params.config - Optional configuration object
  * @param params.config.preserveNestedDefaults - When true, preserves default values in nested objects when merging overrides
@@ -534,7 +535,7 @@ export function zodObjectBuilder<T extends z.ZodObject<ZodRawShape>>({
   config?: BaseConfig
   /** Options for controlling how mocks are generated */
   options?: Options<T>
-  /** Optional override values. Can be a single object or array of objects */
+  /** Optional override values. Can be a single object or array of objects. Overrides do not work with any of the configuration options. */
   overrides?: DeepPartial<z.infer<T>> | DeepPartial<z.infer<T>>[]
 }): z.infer<T>[] | z.infer<T> {
   if (overrides) {
