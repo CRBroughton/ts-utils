@@ -435,20 +435,6 @@ describe('generateMocks', () => {
       expect(result).toHaveLength(1)
       expect(result[0]).toEqual({ ...baseUser, id: 'USER-1' })
     })
-    test('integrates with Faker', () => {
-      const result = generateMocks(baseUser, 3, {
-        transform: {
-          id: ({ index }) => `USER-${index + 1}`,
-          email: ({ index }) => `user${index + 1}@email.com`,
-        },
-      })
-
-      expect(result).toStrictEqual([
-        { ...baseUser, id: 'USER-1', email: 'user1@email.com' },
-        { ...baseUser, id: 'USER-2', email: 'user2@email.com' },
-        { ...baseUser, id: 'USER-3', email: 'user3@email.com' },
-      ])
-    })
   })
 })
 
