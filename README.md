@@ -56,6 +56,7 @@ use-cases.
 const UserSchema = z.object({
   id: z.string().default('1'),
   name: z.string().default("Craig R Broughton"),
+  email: z.string().email().default("myemail@gmail.com")
   settings: z.object({
     theme: z.enum(['light', 'dark']),
     notifications: z.boolean()
@@ -127,6 +128,34 @@ const mixedUsers = zodObjectBuilder({
     ]
   }
 })
+
+// Combine global transformations with batch transformations
+const result = zodObjectBuilder({
+  schema: UserSchema,
+  config: {
+    allowOverlappingTransforms: true
+  },
+  options: {
+    transform: {
+      email: ({ index }) => `global${index + 1}@example.com`
+    },
+    batchTransform: [
+      {
+        count: 2,
+        transform: {
+          id: ({ index }) => `FIRST-${index + 1}`
+        }
+      },
+      {
+        count: 1,
+        transform: {
+          id: ({ index }) => `SECOND-${index + 1}`
+        }
+      }
+    ]
+  }
+})
+
 
 ```
 ## Development Installation

@@ -70,6 +70,34 @@ interface BaseConfig {
    * @default false
    */
   preserveNestedDefaults?: boolean
+  /**
+   * Allows global transforms to be combined with batch transforms.
+   * When true, batch transforms are applied after global transforms and will override any overlapping keys.
+   *
+   * @example
+   * // With allowOverlappingTransforms: true
+   * zodObjectBuilder({
+   *   schema: UserSchema,
+   *   config: { allowOverlappingTransforms: true },
+   *   options: {
+   *     // Global transforms run first
+   *     transform: {
+   *       email: ({ item }) => `${item.name.toLowerCase()}@example.com`
+   *     },
+   *     // Batch transforms can override global transforms
+   *     batchTransform: [
+   *       {
+   *         count: 2,
+   *         transform: {
+   *           name: ({ index }) => `Admin ${index + 1}`
+   *         }
+   *       }
+   *     ]
+   *   }
+   * })
+   *
+   * @default false
+   */
   allowOverlappingTransforms?: boolean
 }
 
@@ -184,13 +212,13 @@ export function generateMocks<T>(
   const items: T[] = []
 
   for (let i = 0; i < count; i++) {
-    let item = { ...base }
+    const item = { ...base }
     if (options.transform) {
       for (const [key, fn] of Object.entries(options.transform)) {
         const transformFn = fn as (params: { item: T, index: number }) => T[keyof T]
-        item[key as keyof T] = transformFn({ 
-          item, 
-          index: options.index !== undefined ? options.index : i 
+        item[key as keyof T] = transformFn({
+          item,
+          index: options.index !== undefined ? options.index : i,
         })
       }
     }
@@ -540,16 +568,16 @@ export function zodObjectBuilder<T extends z.ZodObject<ZodRawShape>>({
       }
     }
   }
-  
+
   if (options.batchTransform) {
     const base = buildDefaultObject(schema)
     const allItems: z.infer<T>[] = []
     let globalIndex = 0
-  
+
     for (const batch of options.batchTransform) {
       for (let batchIndex = 0; batchIndex < batch.count; batchIndex++) {
-        let item = { ...base }
-  
+        const item = { ...base }
+
         // First apply batch transforms
         if (batch.transform) {
           for (const [key, fn] of Object.entries(batch.transform)) {
@@ -557,27 +585,27 @@ export function zodObjectBuilder<T extends z.ZodObject<ZodRawShape>>({
             item[key as keyof z.infer<T>] = transformFn({ item, index: batchIndex })
           }
         }
-  
+
         // Then apply global transforms which can use batch-transformed values
         if (config.allowOverlappingTransforms && options.transform) {
           for (const [key, fn] of Object.entries(options.transform)) {
             // Skip if batch transform already handled this key
-            if (batch.transform && key in batch.transform) continue
-            
+            if (batch.transform && key in batch.transform)
+              continue
+
             const transformFn = fn as (params: { item: z.infer<T>, index: number }) => z.infer<T>[keyof z.infer<T>]
             item[key as keyof z.infer<T>] = transformFn({ item, index: globalIndex })
           }
         }
-  
+
         allItems.push(item)
         globalIndex++
       }
     }
-  
-    if (options.afterGenerate) {
+
+    if (options.afterGenerate)
       return options.afterGenerate(allItems)
-    }
-  
+
     return allItems
   }
   const base = buildDefaultObject(schema)

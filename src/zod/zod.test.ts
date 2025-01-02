@@ -1,258 +1,261 @@
 import { describe, expect, test } from 'bun:test'
 import { z } from 'zod'
-import { buildDefaultObject, generateMocks, mergeWithArrayHandling, zodObjectBuilder, type SchemaTransforms } from '.'
+import { type SchemaTransforms, buildDefaultObject, generateMocks, mergeWithArrayHandling, zodObjectBuilder } from '.'
 
 describe('zodObjectBuilder with transforms and batchTransforms', () => {
   const UserSchema = z.object({
     id: z.string().default('default-id'),
     name: z.string().default('John Smith'),
     email: z.string().email().default('john@email.com'),
-    role: z.enum(['admin', 'user']).default('user')
+    role: z.enum(['admin', 'user']).default('user'),
   })
- 
+
   test('should only apply batch transforms when allowOverlappingTransforms is false', () => {
     const result = zodObjectBuilder({
       schema: UserSchema,
       config: {
-        allowOverlappingTransforms: false
+        allowOverlappingTransforms: false,
       },
       options: {
         transform: {
-          id: ({ index }) => `USER-${index + 1}` // Should be ignored
+          id: ({ index }) => `USER-${index + 1}`, // Should be ignored
         },
         batchTransform: [
           {
             count: 2,
             transform: {
               id: ({ index }) => `ADMIN-${index + 1}`,
-              role: () => 'admin' as const
-            }
+              role: () => 'admin' as const,
+            },
           },
           {
             count: 1,
             transform: {
               id: ({ index }) => `USER-${index + 1}`,
-              role: () => 'user' as const
-            }
-          }
-        ]
-      }
+              role: () => 'user' as const,
+            },
+          },
+        ],
+      },
     })
- 
+
     expect(result).toEqual([
       { ...UserSchema.parse({}), id: 'ADMIN-1', role: 'admin' },
       { ...UserSchema.parse({}), id: 'ADMIN-2', role: 'admin' },
-      { ...UserSchema.parse({}), id: 'USER-1', role: 'user' }
+      { ...UserSchema.parse({}), id: 'USER-1', role: 'user' },
     ])
   })
- 
+
   test('should apply global transforms first when allowOverlappingTransforms is true', () => {
     const result = zodObjectBuilder({
       schema: UserSchema,
       config: {
-        allowOverlappingTransforms: true
+        allowOverlappingTransforms: true,
       },
       options: {
         transform: {
-          email: ({ item }) => `${item.name.toLowerCase()}@example.com`
+          email: ({ item }) => `${item.name.toLowerCase()}@example.com`,
         },
         batchTransform: [
           {
             count: 2,
             transform: {
-              name: ({ index }) => `Admin ${index + 1}`
-            }
-          }
-        ]
-      }
+              name: ({ index }) => `Admin ${index + 1}`,
+            },
+          },
+        ],
+      },
     })
- 
+
     expect(result).toEqual([
       { ...UserSchema.parse({}), name: 'Admin 1', email: 'admin 1@example.com' },
-      { ...UserSchema.parse({}), name: 'Admin 2', email: 'admin 2@example.com' }
+      { ...UserSchema.parse({}), name: 'Admin 2', email: 'admin 2@example.com' },
     ])
   })
- 
+
   test('should allow batch transforms to override global transforms when enabled', () => {
     const result = zodObjectBuilder({
       schema: UserSchema,
       config: {
-        allowOverlappingTransforms: true
+        allowOverlappingTransforms: true,
       },
       options: {
         transform: {
           id: ({ index }) => `GLOBAL-${index + 1}`,
-          name: ({ index }) => `User ${index + 1}`
+          name: ({ index }) => `User ${index + 1}`,
         },
         batchTransform: [
           {
             count: 2,
             transform: {
-              id: ({ index }) => `BATCH-${index + 1}`
-            }
-          }
-        ]
-      }
+              id: ({ index }) => `BATCH-${index + 1}`,
+            },
+          },
+        ],
+      },
     })
- 
+
     // Batch transform overrides 'id', but global 'name' transform remains
     expect(result).toEqual([
       { ...UserSchema.parse({}), id: 'BATCH-1', name: 'User 1' },
-      { ...UserSchema.parse({}), id: 'BATCH-2', name: 'User 2' }
+      { ...UserSchema.parse({}), id: 'BATCH-2', name: 'User 2' },
     ])
   })
- 
+
   test('should maintain independent indices for each batch', () => {
     const result = zodObjectBuilder({
       schema: UserSchema,
       config: {
-        allowOverlappingTransforms: true
+        allowOverlappingTransforms: true,
       },
       options: {
         transform: {
-          email: ({ index }) => `global${index + 1}@example.com`
+          email: ({ index }) => `global${index + 1}@example.com`,
         },
         batchTransform: [
           {
             count: 2,
             transform: {
-              id: ({ index }) => `FIRST-${index + 1}`
-            }
+              id: ({ index }) => `FIRST-${index + 1}`,
+            },
           },
           {
             count: 1,
             transform: {
-              id: ({ index }) => `SECOND-${index + 1}`
-            }
-          }
-        ]
-      }
+              id: ({ index }) => `SECOND-${index + 1}`,
+            },
+          },
+        ],
+      },
     })
- 
+
     expect(result).toEqual([
       { ...UserSchema.parse({}), id: 'FIRST-1', email: 'global1@example.com' },
       { ...UserSchema.parse({}), id: 'FIRST-2', email: 'global2@example.com' },
-      { ...UserSchema.parse({}), id: 'SECOND-1', email: 'global3@example.com' }
+      { ...UserSchema.parse({}), id: 'SECOND-1', email: 'global3@example.com' },
     ])
   })
- })
+})
 
 describe('zodObjectBuilder batches', () => {
   const UserSchema = z.object({
     id: z.string().default('default-id'),
     name: z.string().default('John Smith'),
     email: z.string().email().default('john@email.com'),
-    role: z.enum(['admin', 'user']).default('user')
+    role: z.enum(['admin', 'user']).default('user'),
   })
- 
+
   test('should generate different batches with different transforms', () => {
     const result = zodObjectBuilder({
       schema: UserSchema,
       options: {
         batchTransform: [
-          { 
-            count: 2, 
+          {
+            count: 2,
             transform: {
               id: ({ index }) => `ADMIN-${index + 1}`,
               role: () => 'admin' as const,
-            }
+            },
           },
-          { 
-            count: 3, 
+          {
+            count: 3,
             transform: {
               id: ({ index }) => `USER-${index + 1}`,
-              role: () => 'user' as const
-            }
-          }
-        ]
-      }
+              role: () => 'user' as const,
+            },
+          },
+        ],
+      },
     })
- 
+
     expect(result).toEqual([
       { ...UserSchema.parse({}), id: 'ADMIN-1', role: 'admin' },
       { ...UserSchema.parse({}), id: 'ADMIN-2', role: 'admin' },
       { ...UserSchema.parse({}), id: 'USER-1', role: 'user' },
       { ...UserSchema.parse({}), id: 'USER-2', role: 'user' },
-      { ...UserSchema.parse({}), id: 'USER-3', role: 'user' }
+      { ...UserSchema.parse({}), id: 'USER-3', role: 'user' },
     ])
   })
- 
+
   test('should work with afterGenerate', () => {
     const result = zodObjectBuilder({
       schema: UserSchema,
       options: {
         batchTransform: [
-          { 
+          {
             count: 2,
-            transform: { role: () => 'admin' as const }
+            transform: { role: () => 'admin' as const },
           },
-          { 
+          {
             count: 2,
-            transform: { role: () => 'user' as const }
-          }
+            transform: { role: () => 'user' as const },
+          },
         ],
         afterGenerate: (items) => {
-          return [...items].sort((a, b) => a.role.localeCompare(a.role))
-        }
+          return [...items].sort((a, _b) => a.role.localeCompare(a.role))
+        },
       },
     })
- 
+
     expect(result.map(item => item.role)).toEqual([
-      'admin', 'admin', 'user', 'user'
+      'admin',
+      'admin',
+      'user',
+      'user',
     ])
   })
- 
+
   test('should maintain schema defaults for untransformed fields', () => {
     const result = zodObjectBuilder({
       schema: UserSchema,
       options: {
         batchTransform: [
-          { 
+          {
             count: 1,
-            transform: { id: () => 'custom-id' }
-          }
-        ]
-      }
+            transform: { id: () => 'custom-id' },
+          },
+        ],
+      },
     })
- 
+
     expect(result).toEqual([
       {
         id: 'custom-id',
         name: 'John Smith',
         email: 'john@email.com',
-        role: 'user'
-      }
+        role: 'user',
+      },
     ])
   })
- 
+
   test('each batch should have independent transforms', () => {
     const result = zodObjectBuilder({
       schema: UserSchema,
       options: {
         batchTransform: [
-          { 
+          {
             count: 2,
             transform: {
               name: ({ index }) => `Admin ${index + 1}`,
-              role: () => 'admin' as const
-            }
+              role: () => 'admin' as const,
+            },
           },
-          { 
+          {
             count: 2,
             transform: {
               name: ({ index }) => `User ${index + 1}`,
-              role: () => 'user' as const
-            }
-          }
-        ]
-      }
+              role: () => 'user' as const,
+            },
+          },
+        ],
+      },
     })
- 
+
     expect(result.map(item => ({ name: item.name, role: item.role }))).toEqual([
       { name: 'Admin 1', role: 'admin' },
       { name: 'Admin 2', role: 'admin' },
       { name: 'User 1', role: 'user' },
-      { name: 'User 2', role: 'user' }
+      { name: 'User 2', role: 'user' },
     ])
   })
   test('overrides should take priority over batches', () => {
@@ -260,33 +263,33 @@ describe('zodObjectBuilder batches', () => {
       schema: UserSchema,
       options: {
         batchTransform: [
-          { 
+          {
             count: 2,
-            transform: { 
-              name: () => 'This should not show up in the result'
-            }
-          }
-        ]
+            transform: {
+              name: () => 'This should not show up in the result',
+            },
+          },
+        ],
       },
       overrides: [
         { name: 'Override 1' },
-        { name: 'Override 2' }
+        { name: 'Override 2' },
       ],
     })
-  
+
     expect(result).toEqual([
       { ...UserSchema.parse({}), name: 'Override 1' },
-      { ...UserSchema.parse({}), name: 'Override 2' }
+      { ...UserSchema.parse({}), name: 'Override 2' },
     ])
   })
- })
+})
 
 describe('zodObjectBuilder afterGenerate', () => {
   const UserSchema = z.object({
     id: z.string().default('default-id'),
     name: z.string().default('John Smith'),
     email: z.string().email().default('john@email.com'),
-    role: z.enum(['admin', 'user']).default('user')
+    role: z.enum(['admin', 'user']).default('user'),
   })
 
   test('can sort generated items', () => {
@@ -299,14 +302,14 @@ describe('zodObjectBuilder afterGenerate', () => {
         },
         afterGenerate: (items) => {
           return [...items].sort((a, b) => b.id.localeCompare(a.id))
-        }
-      }
+        },
+      },
     })
 
     expect(result).toEqual([
       { ...UserSchema.parse({}), id: 'USER-3' },
       { ...UserSchema.parse({}), id: 'USER-2' },
-      { ...UserSchema.parse({}), id: 'USER-1' }
+      { ...UserSchema.parse({}), id: 'USER-1' },
     ])
   })
 
@@ -316,18 +319,18 @@ describe('zodObjectBuilder afterGenerate', () => {
       options: {
         count: 3,
         transform: {
-          name: ({ index }) => `User ${index + 1}`
+          name: ({ index }) => `User ${index + 1}`,
         },
         afterGenerate: (items) => {
           const totalLength = items.reduce((sum, item) => sum + item.name.length, 0)
           const avgLength = totalLength / items.length
-          
+
           return items.map(item => ({
             ...item,
-            name: `${item.name} (avg: ${avgLength.toFixed(1)})`
+            name: `${item.name} (avg: ${avgLength.toFixed(1)})`,
           }))
-        }
-      }
+        },
+      },
     })
 
     expect(result[0].name).toContain('(avg:')
@@ -340,19 +343,19 @@ describe('zodObjectBuilder afterGenerate', () => {
       options: {
         afterGenerate: (items) => {
           return [...items].sort((a, b) => b.name.localeCompare(a.name))
-        }
+        },
       },
       overrides: [
         { name: 'Alice' },
         { name: 'Bob' },
-        { name: 'Charlie' }
+        { name: 'Charlie' },
       ],
     })
 
     expect(result).toEqual([
       { ...UserSchema.parse({}), name: 'Charlie' },
       { ...UserSchema.parse({}), name: 'Bob' },
-      { ...UserSchema.parse({}), name: 'Alice' }
+      { ...UserSchema.parse({}), name: 'Alice' },
     ])
   })
 
@@ -362,14 +365,14 @@ describe('zodObjectBuilder afterGenerate', () => {
       options: {
         afterGenerate: (items) => {
           return items.map(item => ({ ...item, name: 'Modified' }))
-        }
+        },
       },
       overrides: { name: 'Single User' },
     })
 
-    expect(result).toEqual({ 
-      ...UserSchema.parse({}), 
-      name: 'Single User' 
+    expect(result).toEqual({
+      ...UserSchema.parse({}),
+      name: 'Single User',
     })
   })
 })
@@ -461,19 +464,19 @@ describe('zodObjectBuilder with transform option', () => {
       id: ({ index }) => `USER-${index + 1}`,
       email: ({ index }) => `user${index + 1}@email.com`,
     }
-  
+
     const result = zodObjectBuilder({
       schema: UserSchema,
       options: {
         count: 3,
-        transform: transforms
-      }
+        transform: transforms,
+      },
     })
-  
+
     expect(result).toEqual([
       { ...UserSchema.parse({}), id: 'USER-1', email: 'user1@email.com' },
       { ...UserSchema.parse({}), id: 'USER-2', email: 'user2@email.com' },
-      { ...UserSchema.parse({}), id: 'USER-3', email: 'user3@email.com' }
+      { ...UserSchema.parse({}), id: 'USER-3', email: 'user3@email.com' },
     ])
   })
   test('should generate sequenced mocks when count and sequnece is provided', () => {
