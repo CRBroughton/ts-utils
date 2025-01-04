@@ -1,5 +1,15 @@
 # @crbroughton/ts-utils
 
+## 0.4.0
+
+### Minor Changes
+
+- 4261b13: allow for global and batch transformations to work together
+
+### Patch Changes
+
+- 59ad8b6: preserveNestedDefaults now works with batch transformations
+
 ## 0.3.0
 
 ### Minor Changes
