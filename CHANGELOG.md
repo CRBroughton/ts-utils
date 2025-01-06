@@ -1,5 +1,17 @@
 # @crbroughton/ts-utils
 
+## 0.5.1
+
+### Patch Changes
+
+- update documentation for allowOverlappingTransforms
+
+## 0.5.0
+
+### Minor Changes
+
+- 3b078e5: allow for both function and object based batch transformations
+
 ## 0.4.0
 
 ### Minor Changes

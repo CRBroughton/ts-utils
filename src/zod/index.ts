@@ -42,22 +42,40 @@ export type SchemaTransforms<T> = {
   }) => T[K]
 }
 
-type Transform<T extends z.ZodObject<ZodRawShape>, AllowPartial extends boolean = false> = {
-  [K in keyof z.infer<T>]?: (params: {
-    item: z.infer<T>
-    index: number
-  }) => AllowPartial extends true ? DeepPartial<z.infer<T>[K]> : z.infer<T>[K]
+type TransformValue<T, K extends keyof T,> = 
+  | ((params: { item: T; index: number }) => DeepPartial<T[K]>)
+  | DeepPartial<T[K]>
+  
+type Transform<T extends z.ZodObject<ZodRawShape>> = {
+  [K in keyof z.infer<T>]?: TransformValue<z.infer<T>, K>
 }
 
 interface BatchOptions<T extends z.ZodObject<ZodRawShape>> {
   /**
-   * Number of items to generate in this batch
+   * Number of items to generate in this batch.
+   * @default 1
    */
-  count: number
+  count?: number
   /**
-   * Transform functions for this specific batch
+   * Transform functions, direct values, or partial values for this specific batch.
+   * Supports:
+   * - Transform functions with access to the current item and index: 
+   *   (params: { item: T; index: number }) => T[K]
+   * - Direct values: T[K]
+   * - Partial values for nested objects
+   * @example
+   * transform: {
+   *   // Transform function with access to the current item
+   *   email: ({ item, index }) => `${item.name}${index}@email.com`,
+   *   // Transform function using only index
+   *   id: ({ index }) => `USER-${index}`,
+   *   // Direct value
+   *   role: 'admin',
+   *   // Partial nested object
+   *   settings: { theme: 'dark' }
+   * }
    */
-  transform?: Transform<T, true> // Always allow partial transforms in batches
+  transform?: Transform<T> // Always allow partial transforms in batches
 }
 
 /**
@@ -238,6 +256,7 @@ export function generateMocks<T>(
  * @param params.options - Options for controlling how mocks are generated
  * @param params.config - Optional configuration object
  * @param params.config.preserveNestedDefaults - When true, preserves default values in nested objects when merging overrides
+ * @param params.config.allowOverlappingTransforms - When true, allows global transforms to be combined with batch transforms
  *
  * @returns If overrides is an array, returns an array of objects. If overrides is a single object,
  *          returns a single object. If no overrides provided, returns an array with one default object.
@@ -315,6 +334,7 @@ export function zodObjectBuilder<T extends z.ZodObject<ZodRawShape>>(params: {
  * @param params.options - Options for controlling how mocks are generated
  * @param params.config - Optional configuration object
  * @param params.config.preserveNestedDefaults - When true, preserves default values in nested objects when merging overrides
+ * @param params.config.allowOverlappingTransforms - When true, allows global transforms to be combined with batch transforms
  *
  * @returns If overrides is an array, returns an array of objects. If overrides is a single object,
  *          returns a single object. If no overrides provided, returns an array with one default object.
@@ -392,6 +412,7 @@ export function zodObjectBuilder<T extends z.ZodObject<ZodRawShape>>(params: {
  * @param params.options - Options for controlling how mocks are generated
  * @param params.config - Optional configuration object
  * @param params.config.preserveNestedDefaults - When true, preserves default values in nested objects when merging overrides
+ * @param params.config.allowOverlappingTransforms - When true, allows global transforms to be combined with batch transforms
  *
  * @returns If overrides is an array, returns an array of objects. If overrides is a single object,
  *          returns a single object. If no overrides provided, returns an array with one default object.
@@ -467,6 +488,7 @@ export function zodObjectBuilder<T extends z.ZodObject<ZodRawShape>>(params: {
  * @param params.options - Options for controlling how mocks are generated
  * @param params.config - Optional configuration object
  * @param params.config.preserveNestedDefaults - When true, preserves default values in nested objects when merging overrides
+ * @param params.config.allowOverlappingTransforms - When true, allows global transforms to be combined with batch transforms
  *
  * @returns If overrides is an array, returns an array of objects. If overrides is a single object,
  *          returns a single object. If no overrides provided, returns an array with one default object.
@@ -525,7 +547,7 @@ export function zodObjectBuilder<T extends z.ZodObject<ZodRawShape>>(params: {
  */
 export function zodObjectBuilder<T extends z.ZodObject<ZodRawShape>>({
   schema,
-  config = { preserveNestedDefaults: false },
+  config = { preserveNestedDefaults: false, allowOverlappingTransforms: false },
   options = {},
   overrides,
 }: {
@@ -576,14 +598,19 @@ export function zodObjectBuilder<T extends z.ZodObject<ZodRawShape>>({
     let globalIndex = 0
 
     for (const batch of options.batchTransform) {
-      for (let batchIndex = 0; batchIndex < batch.count; batchIndex++) {
+      const batchCount = batch.count ?? 1
+      for (let batchIndex = 0; batchIndex < batchCount; batchIndex++) {
         let item = { ...base }
 
         if (batch.transform) {
           const transformedValues = {} as Record<keyof z.infer<T>, z.infer<T>[keyof z.infer<T>]>
-          for (const [key, fn] of Object.entries(batch.transform)) {
-            const transformFn = fn as (params: { item: z.infer<T>, index: number }) => z.infer<T>[keyof z.infer<T>]
-            transformedValues[key as keyof z.infer<T>] = transformFn({ item, index: batchIndex })
+          for (const [key, value] of Object.entries(batch.transform)) {
+            if (typeof value === 'function') {
+              const transformFn = value as (params: { item: z.infer<T>; index: number }) => z.infer<T>[keyof z.infer<T>]
+              transformedValues[key as keyof z.infer<T>] = transformFn({ item, index: batchIndex })
+            } else {
+              transformedValues[key as keyof z.infer<T>] = value
+            }
           }
 
           item = config.preserveNestedDefaults

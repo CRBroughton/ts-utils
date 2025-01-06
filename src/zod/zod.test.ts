@@ -10,6 +10,76 @@ describe('zodObjectBuilder with transforms and batchTransforms', () => {
     role: z.enum(['admin', 'user']).default('user'),
   })
 
+  test('count defaults to one', () => {
+    const result = zodObjectBuilder({
+      schema: UserSchema,
+      config: {
+        allowOverlappingTransforms: false,
+      },
+      options: {
+        transform: {
+          id: ({ index }) => `USER-${index + 1}`, // Should be ignored
+        },
+        batchTransform: [
+          {
+            transform: {
+              id: ({ index }) => `ADMIN-${index + 1}`,
+              role: () => 'admin' as const,
+            },
+          },
+          {
+            count: 1,
+            transform: {
+              id: ({ index }) => `USER-${index + 1}`,
+              role: () => 'user' as const,
+            },
+          },
+        ],
+      },
+    })
+
+    expect(result).toEqual([
+      { ...UserSchema.parse({}), id: 'ADMIN-1', role: 'admin' },
+      { ...UserSchema.parse({}), id: 'USER-1', role: 'user' },
+    ])
+  })
+
+  test('should allow for non functional batch transformations', () => {
+    const result = zodObjectBuilder({
+      schema: UserSchema,
+      config: {
+        allowOverlappingTransforms: false,
+      },
+      options: {
+        transform: {
+          id: ({ index }) => `USER-${index + 1}`, // Should be ignored
+        },
+        batchTransform: [
+          {
+            count: 2,
+            transform: {
+              id: ({ index }) => `ADMIN-${index + 1}`,
+              role: 'admin',
+            },
+          },
+          {
+            count: 1,
+            transform: {
+              id: ({ index }) => `USER-${index + 1}`,
+              role: () => 'user' as const,
+            },
+          },
+        ],
+      },
+    })
+
+    expect(result).toEqual([
+      { ...UserSchema.parse({}), id: 'ADMIN-1', role: 'admin' },
+      { ...UserSchema.parse({}), id: 'ADMIN-2', role: 'admin' },
+      { ...UserSchema.parse({}), id: 'USER-1', role: 'user' },
+    ])
+  })
+
   test('should only apply batch transforms when allowOverlappingTransforms is false', () => {
     const result = zodObjectBuilder({
       schema: UserSchema,
@@ -771,6 +841,84 @@ describe('zodObjectBuilder', () => {
       },
     ])
   })
+
+  test('creates a zod object array from a schema (with batch transformations & preserveNestedDefaults & non functional )', () => {
+    const schema = z.object(
+      {
+        foo: z.string().default('Hello, World!'),
+        bar: z.boolean().default(false),
+        nestedExample: z.object({
+          nested1: z.string().default('nested1'),
+          nested2: z.object({
+            nestednested1: z.string().default('nested2'),
+          }),
+        }),
+      },
+    )
+
+    const actual = zodObjectBuilder({
+      schema,
+      config: {
+        preserveNestedDefaults: true,
+      },
+      options: {
+        batchTransform: [
+          {
+            transform: {
+              foo: () => 'rawr',
+            },
+          },
+          {
+            transform: {
+              foo: () => 'rawr2',
+              bar: true,
+            },
+          },
+          {
+            transform: {
+              nestedExample: {
+                  nested1: 'nested-one',
+              },
+            },
+          },
+        ],
+      },
+    })
+
+    expect(actual).toStrictEqual([
+      {
+        foo: 'rawr',
+        bar: false,
+        nestedExample: {
+          nested1: 'nested1',
+          nested2: {
+            nestednested1: 'nested2',
+          },
+        },
+      },
+      {
+        foo: 'rawr2',
+        bar: true,
+        nestedExample: {
+          nested1: 'nested1',
+          nested2: {
+            nestednested1: 'nested2',
+          },
+        },
+      },
+      {
+        foo: 'Hello, World!',
+        bar: false,
+        nestedExample: {
+          nested1: 'nested-one',
+          nested2: {
+            nestednested1: 'nested2',
+          },
+        },
+      },
+    ])
+  })
+
   test('creates a zod object array from a schema (with batch transformations & preserveNestedDefaults)', () => {
     const schema = z.object(
       {
