@@ -1,5 +1,11 @@
 # @crbroughton/ts-utils
 
+## 0.6.1
+
+### Patch Changes
+
+- ensure default schemas return early to properly populate the default values
+
 ## 0.6.0
 
 ### Minor Changes

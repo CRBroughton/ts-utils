@@ -5,10 +5,6 @@ type DeepPartial<T> = T extends object ? {
 } : T
 
 type SupportedZodSchema = z.ZodObject<ZodRawShape> | z.ZodDefault<z.ZodObject<ZodRawShape>>
-/**
- * Helper type to extract the underlying ZodObject from either a ZodObject or ZodDefault<ZodObject>
- */
-type ExtractZodObject<T extends SupportedZodSchema> = T extends z.ZodDefault<infer U> ? U : T
 
 /**
  * Create type-safe transform functions based on your Zod schema.
@@ -48,10 +44,9 @@ export type SchemaTransforms<T> = {
   }) => T[K]
 }
 
-type TransformValue<T, K extends keyof T,> = 
+type TransformValue<T, K extends keyof T> =
   | ((params: { item: T; index: number }) => DeepPartial<T[K]>)
   | DeepPartial<T[K]>
-  
 type Transform<T extends SupportedZodSchema> = {
   [K in keyof z.infer<T>]?: TransformValue<z.infer<T>, K>
 }
@@ -664,8 +659,11 @@ export function zodObjectBuilder<T extends SupportedZodSchema>({
  * @returns A complete object with default values for all fields
  */
 export function buildDefaultObject<T extends SupportedZodSchema>(schema: T): z.infer<T> {
-  // Extract the underlying ZodObject from ZodDefault if necessary
-  const zodObject = (schema instanceof z.ZodDefault ? schema._def.innerType : schema) as z.ZodObject<ZodRawShape>
+  // Handle ZodDefault by using its default value directly
+  if (schema instanceof z.ZodDefault)
+    return schema.parse(undefined)
+  // Handle regular ZodObject
+  const zodObject = schema as z.ZodObject<ZodRawShape>
   const shape = zodObject.shape
   const defaultBase: Record<string, any> = {}
 

@@ -6,10 +6,10 @@ import { faker } from '@faker-js/faker'
 describe('zodObjectBuilder with seperate default mock object', () => {
   test('should work with ZodDefault wrapped ZodObject', () => {
     const UserSchema = z.object({
-      id: z.string().default('default-id'),
-      name: z.string().default('John Smith'),
-      email: z.string().email().default('john@email.com'),
-      role: z.enum(['admin', 'user']).default('user'),
+      id: z.string(),
+      name: z.string(),
+      email: z.string(),
+      role: z.enum(['admin', 'user']),
     })
 
     const UserSchemaMock = UserSchema.default({
