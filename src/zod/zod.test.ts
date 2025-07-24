@@ -1,6 +1,114 @@
 import { describe, expect, test } from 'bun:test'
 import { z } from 'zod'
 import { type SchemaTransforms, buildDefaultObject, generateMocks, mergeWithArrayHandling, zodObjectBuilder } from '.'
+import { faker } from '@faker-js/faker'
+
+describe('zodObjectBuilder with seperate default mock object', () => {
+  test('should work with ZodDefault wrapped ZodObject', () => {
+    const UserSchema = z.object({
+      id: z.string().default('default-id'),
+      name: z.string().default('John Smith'),
+      email: z.string().email().default('john@email.com'),
+      role: z.enum(['admin', 'user']).default('user'),
+    })
+
+    const UserSchemaMock = UserSchema.default({
+      id: 'default-id',
+      name: 'John Smith',
+      email: "john@email.com",
+      role: 'user'
+    })
+
+    const result = zodObjectBuilder({
+      schema: UserSchemaMock,
+    })
+
+    expect(result).toStrictEqual([{
+      id: 'default-id',
+      name: "John Smith",
+      email: "john@email.com",
+      role: "user"
+    }])
+  })
+
+  test('can properly use the override hack to get a single object', () => {
+    const UserSchema = z.object({
+      id: z.string().default('default-id'),
+      name: z.string().default('John Smith'),
+      email: z.string().email().default('john@email.com'),
+      role: z.enum(['admin', 'user']).default('user'),
+    })
+
+    const UserSchemaMock = UserSchema.default({
+      id: 'default-id',
+      name: 'John Smith',
+      email: "john@email.com",
+      role: 'user'
+    })
+
+    const result = zodObjectBuilder({
+      schema: UserSchemaMock,
+      overrides: {}
+    })
+
+    expect(result).toStrictEqual({
+      id: 'default-id',
+      name: "John Smith",
+      email: "john@email.com",
+      role: "user"
+    })
+  })
+
+  test('can still use the included features of ZodObjectBuilder', () => {
+    const UserSchema = z.object({
+      id: z.string().default('default-id'),
+      name: z.string().default('John Smith'),
+      email: z.string().email().default('john@email.com'),
+      role: z.enum(['admin', 'user']).default('user'),
+    })
+
+    const UserSchemaMock = UserSchema.default({
+      id: 'default-id',
+      name: 'John Smith',
+      email: "john@email.com",
+      role: 'user'
+    })
+
+    faker.seed(123);
+    const result = zodObjectBuilder({
+      schema: UserSchemaMock,
+      options: {
+        count: 3,
+        transform: {
+          id: ({item, index}) => `${index}-${item.id}`,
+          name: () => faker.person.fullName(),
+        },
+        afterGenerate: (items) => {
+          return [...items].sort((a, b) => a.name.localeCompare(b.name))
+        }
+      }
+    })
+
+    expect(result).toStrictEqual(
+      [{
+        id: '0-default-id',
+        name: "Edmond Lubowitz",
+        email: "john@email.com",
+        role: "user"
+      }, {
+        id: '2-default-id',
+        name: "Myrtle Beier",
+        email: "john@email.com",
+        role: "user"
+      }, {
+        id: '1-default-id',
+        name: "Vivian Kshlerin",
+        email: "john@email.com",
+        role: "user"
+      }]
+    )
+  })
+})
 
 describe('zodObjectBuilder with transforms and batchTransforms', () => {
   const UserSchema = z.object({
@@ -877,7 +985,7 @@ describe('zodObjectBuilder', () => {
           {
             transform: {
               nestedExample: {
-                  nested1: 'nested-one',
+                nested1: 'nested-one',
               },
             },
           },

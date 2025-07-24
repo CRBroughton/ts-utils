@@ -4,6 +4,12 @@ type DeepPartial<T> = T extends object ? {
   [P in keyof T]?: DeepPartial<T[P]>;
 } : T
 
+type SupportedZodSchema = z.ZodObject<ZodRawShape> | z.ZodDefault<z.ZodObject<ZodRawShape>>
+/**
+ * Helper type to extract the underlying ZodObject from either a ZodObject or ZodDefault<ZodObject>
+ */
+type ExtractZodObject<T extends SupportedZodSchema> = T extends z.ZodDefault<infer U> ? U : T
+
 /**
  * Create type-safe transform functions based on your Zod schema.
  * Use this to create reusable, schema-validated transformations for generating mock data.
@@ -46,11 +52,11 @@ type TransformValue<T, K extends keyof T,> =
   | ((params: { item: T; index: number }) => DeepPartial<T[K]>)
   | DeepPartial<T[K]>
   
-type Transform<T extends z.ZodObject<ZodRawShape>> = {
+type Transform<T extends SupportedZodSchema> = {
   [K in keyof z.infer<T>]?: TransformValue<z.infer<T>, K>
 }
 
-interface BatchOptions<T extends z.ZodObject<ZodRawShape>> {
+interface BatchOptions<T extends SupportedZodSchema> {
   /**
    * Number of items to generate in this batch.
    * @default 1
@@ -122,7 +128,7 @@ interface BaseConfig {
 /**
  * Options for the zodObjectBuilder.
  */
-interface Options<T extends z.ZodObject<ZodRawShape>> {
+interface Options<T extends SupportedZodSchema> {
   /**
    * Generates the specified number of mocks using schema defaults.
    * Only applies when no overrides are provided.
@@ -313,7 +319,7 @@ export function generateMocks<T>(
  *   }
  * });
  */
-export function zodObjectBuilder<T extends z.ZodObject<ZodRawShape>>(params: {
+export function zodObjectBuilder<T extends SupportedZodSchema>(params: {
   /** The Zod schema that defines the shape of the returned mocks */
   schema: T
   /** Configuration options for controlling how mocks are generated */
@@ -391,7 +397,7 @@ export function zodObjectBuilder<T extends z.ZodObject<ZodRawShape>>(params: {
  *   }
  * });
  */
-export function zodObjectBuilder<T extends z.ZodObject<ZodRawShape>>(params: {
+export function zodObjectBuilder<T extends SupportedZodSchema>(params: {
   /** The Zod schema that defines the shape of the returned mocks */
   schema: T
   /** Configuration options */
@@ -469,7 +475,7 @@ export function zodObjectBuilder<T extends z.ZodObject<ZodRawShape>>(params: {
  *   }
  * });
  */
-export function zodObjectBuilder<T extends z.ZodObject<ZodRawShape>>(params: {
+export function zodObjectBuilder<T extends SupportedZodSchema>(params: {
   /** The Zod schema that defines the shape of the returned mocks */
   schema: T
   /** Configuration options for controlling how mocks are generated */
@@ -545,7 +551,7 @@ export function zodObjectBuilder<T extends z.ZodObject<ZodRawShape>>(params: {
  *   }
  * });
  */
-export function zodObjectBuilder<T extends z.ZodObject<ZodRawShape>>({
+export function zodObjectBuilder<T extends SupportedZodSchema>({
   schema,
   config = { preserveNestedDefaults: false, allowOverlappingTransforms: false },
   options = {},
@@ -657,8 +663,10 @@ export function zodObjectBuilder<T extends z.ZodObject<ZodRawShape>>({
  * @param schema - Zod schema to build defaults from
  * @returns A complete object with default values for all fields
  */
-export function buildDefaultObject<T extends z.ZodObject<ZodRawShape>>(schema: T): z.infer<T> {
-  const shape = schema.shape
+export function buildDefaultObject<T extends SupportedZodSchema>(schema: T): z.infer<T> {
+  // Extract the underlying ZodObject from ZodDefault if necessary
+  const zodObject = (schema instanceof z.ZodDefault ? schema._def.innerType : schema) as z.ZodObject<ZodRawShape>
+  const shape = zodObject.shape
   const defaultBase: Record<string, any> = {}
 
   for (const key in shape) {

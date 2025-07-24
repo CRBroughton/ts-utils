@@ -1,5 +1,15 @@
 # @crbroughton/ts-utils
 
+## 0.6.0
+
+### Minor Changes
+
+- add support for z.ZodDefault schemas
+
+### Patch Changes
+
+- dff53e8: add documentation for createEnum and Prettify
+
 ## 0.5.1
 
 ### Patch Changes
