@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'bun:test'
 import { z } from 'zod'
-import { type SchemaTransforms, buildDefaultObject, generateMocks, mergeWithArrayHandling, zodObjectBuilder } from '.'
 import { faker } from '@faker-js/faker'
+import { type SchemaTransforms, buildDefaultObject, generateMocks, mergeWithArrayHandling, zodObjectBuilder } from '.'
 
 describe('zodObjectBuilder with seperate default mock object', () => {
   test('should work with ZodDefault wrapped ZodObject', () => {
@@ -15,8 +15,8 @@ describe('zodObjectBuilder with seperate default mock object', () => {
     const UserSchemaMock = UserSchema.default({
       id: 'default-id',
       name: 'John Smith',
-      email: "john@email.com",
-      role: 'user'
+      email: 'john@email.com',
+      role: 'user',
     })
 
     const result = zodObjectBuilder({
@@ -25,87 +25,87 @@ describe('zodObjectBuilder with seperate default mock object', () => {
 
     expect(result).toStrictEqual([{
       id: 'default-id',
-      name: "John Smith",
-      email: "john@email.com",
-      role: "user"
+      name: 'John Smith',
+      email: 'john@email.com',
+      role: 'user',
     }])
   })
 
   test('can properly use the override hack to get a single object', () => {
     const UserSchema = z.object({
-      id: z.string().default('default-id'),
-      name: z.string().default('John Smith'),
-      email: z.string().email().default('john@email.com'),
-      role: z.enum(['admin', 'user']).default('user'),
+      id: z.string(),
+      name: z.string(),
+      email: z.string().email(),
+      role: z.enum(['admin', 'user']),
     })
 
     const UserSchemaMock = UserSchema.default({
       id: 'default-id',
       name: 'John Smith',
-      email: "john@email.com",
-      role: 'user'
+      email: 'john@email.com',
+      role: 'user',
     })
 
     const result = zodObjectBuilder({
       schema: UserSchemaMock,
-      overrides: {}
+      overrides: {},
     })
 
     expect(result).toStrictEqual({
       id: 'default-id',
-      name: "John Smith",
-      email: "john@email.com",
-      role: "user"
+      name: 'John Smith',
+      email: 'john@email.com',
+      role: 'user',
     })
   })
 
   test('can still use the included features of ZodObjectBuilder', () => {
     const UserSchema = z.object({
-      id: z.string().default('default-id'),
-      name: z.string().default('John Smith'),
-      email: z.string().email().default('john@email.com'),
-      role: z.enum(['admin', 'user']).default('user'),
+      id: z.string(),
+      name: z.string(),
+      email: z.string().email(),
+      role: z.enum(['admin', 'user']),
     })
 
     const UserSchemaMock = UserSchema.default({
       id: 'default-id',
       name: 'John Smith',
-      email: "john@email.com",
-      role: 'user'
+      email: 'john@email.com',
+      role: 'user',
     })
 
-    faker.seed(123);
+    faker.seed(123)
     const result = zodObjectBuilder({
       schema: UserSchemaMock,
       options: {
         count: 3,
         transform: {
-          id: ({item, index}) => `${index}-${item.id}`,
+          id: ({ item, index }) => `${index}-${item.id}`,
           name: () => faker.person.fullName(),
         },
         afterGenerate: (items) => {
           return [...items].sort((a, b) => a.name.localeCompare(b.name))
-        }
-      }
+        },
+      },
     })
 
     expect(result).toStrictEqual(
       [{
         id: '0-default-id',
-        name: "Edmond Lubowitz",
-        email: "john@email.com",
-        role: "user"
+        name: 'Edmond Lubowitz',
+        email: 'john@email.com',
+        role: 'user',
       }, {
         id: '2-default-id',
-        name: "Myrtle Beier",
-        email: "john@email.com",
-        role: "user"
+        name: 'Myrtle Beier',
+        email: 'john@email.com',
+        role: 'user',
       }, {
         id: '1-default-id',
-        name: "Vivian Kshlerin",
-        email: "john@email.com",
-        role: "user"
-      }]
+        name: 'Vivian Kshlerin',
+        email: 'john@email.com',
+        role: 'user',
+      }],
     )
   })
 })

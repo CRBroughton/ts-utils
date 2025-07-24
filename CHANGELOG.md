@@ -1,5 +1,11 @@
 # @crbroughton/ts-utils
 
+## 0.6.2
+
+### Patch Changes
+
+- ensuring overrie continues to work with default schemas
+
 ## 0.6.1
 
 ### Patch Changes

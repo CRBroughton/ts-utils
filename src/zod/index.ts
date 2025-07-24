@@ -587,7 +587,7 @@ export function zodObjectBuilder<T extends SupportedZodSchema>({
         return mergeWithArrayHandling(base, overrides)
       }
       else {
-        const base = schema.parse({})
+        const base = buildDefaultObject(schema)
         return { ...base, ...overrides }
       }
     }
