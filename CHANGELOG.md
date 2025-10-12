@@ -1,5 +1,11 @@
 # @crbroughton/ts-utils
 
+## 1.0.0
+
+### Major Changes
+
+- Replace await package with result package
+
 ## 0.6.2
 
 ### Patch Changes

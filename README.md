@@ -4,7 +4,7 @@ A collection of helper functions and types. To use any of the following,
 simply import into your project like so:
 
 ```typescript
-import { handleError, safeAwait } from '@crbroughton/ts-utils'
+import { safeAwait, Ok, Err, Result } from '@crbroughton/ts-utils'
 ```
 
 ## Installation
@@ -15,15 +15,43 @@ To install `ts-utils` with Bun, run the following command:
 bun i -D @crbroughton/ts-utils
 ```
 
-## await
+## result
 
-The `await` directory contains the following:
+The `result` directory contains a Rust-inspired Result type system for explicit error handling:
 
-- `safeAwait` - This function return either a result or error value. This suppports both a Go and Rust like syntax, using overload functions.
-- `handleError` - To be used in conjunction with `safeAwait`.
+- `Result<T, E>` - A type representing either success (`Ok<T>`) or failure (`Err<E>`)
+- `Ok(value)` - Creates a successful result containing a value
+- `Err(error)` - Creates a failed result containing an error
+- `safeAwait(promise)` - Safely executes a Promise and returns a Result instead of throwing
+- `isOk(result)` - Type guard to check if a Result is Ok
+- `isErr(result)` - Type guard to check if a Result is Err
+- `ok(result)` - Extracts the value from a Result if Ok, otherwise returns null
+- `err(result)` - Extracts the error from a Result if Err, otherwise returns null
 
-The goal of the `await` helpers is to make it more obvious where throw exceptions
-occur and to help guide the user to write exception handlers. Please inspect the [the accompanying example file](src/await/await.example.ts) file to see both helpers in action.
+Example usage:
+
+```typescript
+// Basic usage with safeAwait
+const result = await safeAwait(fetch('/api/data'))
+if (isErr(result)) {
+  console.error('Fetch failed:', result.error)
+  return
+}
+const response = result.value
+
+// Creating Results manually
+const success = Ok(42) // { ok: true, value: 42 }
+const failure = Err('Something went wrong') // { ok: false, error: 'Something went wrong' }
+
+// Type guards for safe access
+if (isOk(result)) {
+  console.log(result.value) // TypeScript knows this is the success type
+}
+
+// Convenient extraction
+const user = ok(result) // User | null
+const error = err(result) // Error | null
+```
 
 ## enum
 
