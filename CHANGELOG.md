@@ -1,5 +1,50 @@
 # @crbroughton/ts-utils
 
+## 2.0.0
+
+### Major Changes
+
+- 442229c: **BREAKING CHANGE:** Enforce non-empty overrides with compile-time and runtime validation
+
+  The `overrides` parameter now requires at least one meaningful value:
+
+  - `overrides: {}` (empty object) → Type error + runtime error
+  - `overrides: []` (empty array) → Type error + runtime error
+  - `overrides: [{}]` (array with empty objects) → Runtime error
+
+  **Migration:**
+
+  - Remove `overrides: {}` and use `options: { container: 'object' }` instead
+  - Remove `overrides: []` and omit the overrides parameter
+  - Ensure all override objects have at least one key
+
+### Minor Changes
+
+- d02d837: Add `container` option to control return value shape
+
+  The new `options.container` parameter allows users to control whether `zodObjectBuilder` returns an array or a single object when no overrides are provided:
+
+  **Usage:**
+
+  ```typescript
+  // Returns an array (default)
+  const users = zodObjectBuilder({ schema: UserSchema });
+  // Result: [{ id: 'default-id', name: 'John' }]
+
+  // Returns a single object
+  const user = zodObjectBuilder({
+    schema: UserSchema,
+    options: { container: "object" },
+  });
+  // Result: { id: 'default-id', name: 'John' }
+  ```
+
+  **Features:**
+
+  - Type-safe: Return type is correctly inferred based on container option
+  - Replaces the previous hack of using `overrides: {}` to get a single object
+  - Works alongside other options like `count`, `transform`, and `afterGenerate`
+
 ## 1.0.0
 
 ### Major Changes
