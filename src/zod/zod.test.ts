@@ -4,6 +4,73 @@ import { faker } from '@faker-js/faker'
 import { type SchemaTransforms, buildDefaultObject, generateMocks, mergeWithArrayHandling, zodObjectBuilder } from '.'
 
 describe('Container shape (array or object)', () => {
+  test('should throw error when using empty object override', () => {
+    const UserSchema = z.object({
+      id: z.string(),
+      name: z.string(),
+      email: z.string(),
+      role: z.enum(['admin', 'user']),
+    })
+
+    const UserSchemaMock = UserSchema.default({
+      id: 'default-id',
+      name: 'John Smith',
+      email: 'john@email.com',
+      role: 'user',
+    })
+
+    expect(() => zodObjectBuilder({
+      schema: UserSchemaMock,
+      // @ts-expect-error - Empty object should not be allowed, must have at least one key
+      overrides: {},
+    })).toThrow('When using overrides as a single object, at least one valid key must be provided. Use options: { container: \'object\' } instead if you want to return a single object without overrides.')
+  })
+
+  test('should throw error when using empty array override', () => {
+    const UserSchema = z.object({
+      id: z.string(),
+      name: z.string(),
+      email: z.string(),
+      role: z.enum(['admin', 'user']),
+    })
+
+    const UserSchemaMock = UserSchema.default({
+      id: 'default-id',
+      name: 'John Smith',
+      email: 'john@email.com',
+      role: 'user',
+    })
+
+    expect(() => zodObjectBuilder({
+      schema: UserSchemaMock,
+      // @ts-expect-error - Empty array should not be allowed, must have at least one element
+      overrides: [],
+    })).toThrow('When using overrides as an array, at least one element must be provided. Remove the overrides parameter if you want to use default values.')
+  })
+
+  test('should throw error when array contains empty objects', () => {
+    const UserSchema = z.object({
+      id: z.string(),
+      name: z.string(),
+      email: z.string(),
+      role: z.enum(['admin', 'user']),
+    })
+
+    const UserSchemaMock = UserSchema.default({
+      id: 'default-id',
+      name: 'John Smith',
+      email: 'john@email.com',
+      role: 'user',
+    })
+
+    expect(() => zodObjectBuilder({
+      schema: UserSchemaMock,
+      // Note: TypeScript cannot catch empty objects in arrays without breaking type inference for partial objects.
+      // Runtime validation catches this case.
+      overrides: [{}],
+    })).toThrow('Override at index 0 is an empty object. Each override element must contain at least one key.')
+  })
+
   test('should return an array by default', () => {
     const UserSchema = z.object({
       id: z.string(),

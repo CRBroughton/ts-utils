@@ -68,7 +68,7 @@ interface BatchOptions<T extends SupportedZodSchema> {
   /**
    * Transform functions, direct values, or partial values for this specific batch.
    * Supports:
-   * - Transform functions with access to the current item and index: 
+   * - Transform functions with access to the current item and index:
    *   (params: { item: T; index: number }) => T[K]
    * - Direct values: T[K]
    * - Partial values for nested objects
@@ -355,8 +355,8 @@ export function zodObjectBuilder<T extends SupportedZodSchema>(params: {
   config?: BaseConfig
   /** Options for controlling how mocks are generated */
   options?: Options<T>
-  /** Optional override values. Can be a single object or array of objects. Overrides do not work with any of the configuration options. */
-  overrides: DeepPartial<z.infer<T>>
+  /** Optional override values. Must contain at least one key. Use options.container = 'object' if you want a single object without overrides. */
+  overrides: NonEmptyDeepPartial<z.infer<T>>
 }): z.infer<T>
 
 /**
@@ -433,8 +433,8 @@ export function zodObjectBuilder<T extends SupportedZodSchema>(params: {
   config?: BaseConfig
   /** Options for controlling how mocks are generated */
   options?: Options<T>
-  /** Optional override values. Can be a single object or array of objects. Overrides do not work with any of the configuration options. */
-  overrides: DeepPartial<z.infer<T>>[]
+  /** Optional override values. Must be a non-empty array with each element containing at least one key. Runtime validation enforces non-empty arrays and objects. */
+  overrides: NonEmptyArray<DeepPartial<z.infer<T>>>
 }): z.infer<T>[]
 
 /**
@@ -628,6 +628,16 @@ export function zodObjectBuilder<T extends SupportedZodSchema>({
 }): z.infer<T>[] | z.infer<T> {
   if (overrides) {
     if (Array.isArray(overrides)) {
+      // Require at least one element when using array overrides
+      if (overrides.length === 0)
+        throw new Error('When using overrides as an array, at least one element must be provided. Remove the overrides parameter if you want to use default values.')
+
+      // Validate that each override element has at least one key
+      overrides.forEach((override, index) => {
+        if (override && typeof override === 'object' && Object.keys(override).length === 0)
+          throw new Error(`Override at index ${index} is an empty object. Each override element must contain at least one key.`)
+      })
+
       const objects: z.infer<T>[] = []
       overrides.forEach((override) => {
         if (config.preserveNestedDefaults) {
@@ -647,6 +657,10 @@ export function zodObjectBuilder<T extends SupportedZodSchema>({
       return objects
     }
     else {
+      // Require at least one valid key when using single object override
+      if (Object.keys(overrides).length === 0)
+        throw new Error('When using overrides as a single object, at least one valid key must be provided. Use options: { container: \'object\' } instead if you want to return a single object without overrides.')
+
       if (config.preserveNestedDefaults) {
         const base = buildDefaultObject(schema)
         return mergeWithArrayHandling(base, overrides)
@@ -672,9 +686,10 @@ export function zodObjectBuilder<T extends SupportedZodSchema>({
           const transformedValues = {} as Record<keyof z.infer<T>, z.infer<T>[keyof z.infer<T>]>
           for (const [key, value] of Object.entries(batch.transform)) {
             if (typeof value === 'function') {
-              const transformFn = value as (params: { item: z.infer<T>; index: number }) => z.infer<T>[keyof z.infer<T>]
+              const transformFn = value as (params: { item: z.infer<T>, index: number }) => z.infer<T>[keyof z.infer<T>]
               transformedValues[key as keyof z.infer<T>] = transformFn({ item, index: batchIndex })
-            } else {
+            }
+            else {
               transformedValues[key as keyof z.infer<T>] = value
             }
           }
