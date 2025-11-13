@@ -4,6 +4,14 @@ type DeepPartial<T> = T extends object ? {
   [P in keyof T]?: DeepPartial<T[P]>;
 } : T
 
+type RequireAtLeastOne<T> = T extends object
+  ? { [K in keyof T]-?: Required<Pick<T, K>> & Partial<Pick<T, Exclude<keyof T, K>>> }[keyof T]
+  : T
+
+type NonEmptyDeepPartial<T> = DeepPartial<T> & RequireAtLeastOne<T>
+
+type NonEmptyArray<T> = [T, ...T[]]
+
 type SupportedZodSchema = z.ZodObject<ZodRawShape> | z.ZodDefault<z.ZodObject<ZodRawShape>>
 
 /**
@@ -45,7 +53,7 @@ export type SchemaTransforms<T> = {
 }
 
 type TransformValue<T, K extends keyof T> =
-  | ((params: { item: T; index: number }) => DeepPartial<T[K]>)
+  | ((params: { item: T, index: number }) => DeepPartial<T[K]>)
   | DeepPartial<T[K]>
 type Transform<T extends SupportedZodSchema> = {
   [K in keyof z.infer<T>]?: TransformValue<z.infer<T>, K>
@@ -186,6 +194,32 @@ interface Options<T extends SupportedZodSchema> {
    * })
    */
   afterGenerate?: (items: z.infer<T>[]) => z.infer<T>[]
+
+  /**
+   * Controls the shape of the return value when no overrides are provided.
+   * - 'array': Returns an array with a single object (default behavior)
+   * - 'object': Returns a plain object without wrapping it in an array
+   *
+   * Note: This option is ignored when overrides are provided, as overrides determine the return shape.
+   *
+   * @example
+   * // Returns an array by default
+   * const users = zodObjectBuilder({
+   *   schema: UserSchema
+   * })
+   * // Result: [{ id: 'default-id', name: 'John' }]
+   *
+   * @example
+   * // Returns a single object
+   * const user = zodObjectBuilder({
+   *   schema: UserSchema,
+   *   options: { container: 'object' }
+   * })
+   * // Result: { id: 'default-id', name: 'John' }
+   *
+   * @default 'array'
+   */
+  container?: 'object' | 'array'
 }
 
 interface GenerateConfig<T> {
@@ -402,6 +436,37 @@ export function zodObjectBuilder<T extends SupportedZodSchema>(params: {
   /** Optional override values. Can be a single object or array of objects. Overrides do not work with any of the configuration options. */
   overrides: DeepPartial<z.infer<T>>[]
 }): z.infer<T>[]
+
+/**
+ * Creates objects from a Zod schema with container: 'object' option.
+ *
+ * @param params Configuration object for the builder
+ * @param params.schema - Zod schema that defines the shape and validation rules for the objects
+ * @param params.config - Optional configuration object
+ * @param params.options - Options object with container set to 'object'
+ *
+ * @returns A single object
+ *
+ * @example
+ * const UserSchema = z.object({
+ *   id: z.string().default('id'),
+ *   name: z.string().default('John')
+ * });
+ *
+ * const user = zodObjectBuilder({
+ *   schema: UserSchema,
+ *   options: { container: 'object' }
+ * });
+ * // Result: { id: 'id', name: 'John' }
+ */
+export function zodObjectBuilder<T extends SupportedZodSchema>(params: {
+  /** The Zod schema that defines the shape of the returned mocks */
+  schema: T
+  /** Configuration options */
+  config?: BaseConfig
+  /** Options with container set to 'object' */
+  options: Options<T> & { container: 'object' }
+}): z.infer<T>
 
 /**
  * Creates objects from a Zod schema with optional overrides. This utility function helps generate
@@ -647,6 +712,10 @@ export function zodObjectBuilder<T extends SupportedZodSchema>({
 
     return items
   }
+
+  // Handle container option
+  if (options.container === 'object')
+    return base
 
   return [base]
 }
