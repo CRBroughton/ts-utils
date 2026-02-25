@@ -94,7 +94,7 @@ interface BaseConfig {
   /**
    * When true, preserves default values in nested objects when merging overrides.
    * This is useful when you want to retain schema defaults while overriding specific fields.
-   * @default false
+   * @default true
    */
   preserveNestedDefaults?: boolean
   /**
@@ -613,7 +613,7 @@ export function zodObjectBuilder<T extends SupportedZodSchema>(params: {
  */
 export function zodObjectBuilder<T extends SupportedZodSchema>({
   schema,
-  config = { preserveNestedDefaults: false, allowOverlappingTransforms: false },
+  config = { preserveNestedDefaults: true, allowOverlappingTransforms: false },
   options = {},
   overrides,
 }: {

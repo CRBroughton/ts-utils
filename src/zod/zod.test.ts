@@ -1034,6 +1034,9 @@ describe('zodObjectBuilder', () => {
         bar: false,
         nestedExample: {
           nested1: 'nested1',
+          nested2: {
+            nestednested1: 'nested2',
+          },
         },
       },
     ])
@@ -1055,9 +1058,6 @@ describe('zodObjectBuilder', () => {
 
     const actual = zodObjectBuilder({
       schema,
-      config: {
-        preserveNestedDefaults: true,
-      },
       overrides: [
         {
           foo: 'rawr',
@@ -1124,9 +1124,6 @@ describe('zodObjectBuilder', () => {
 
     const actual = zodObjectBuilder({
       schema,
-      config: {
-        preserveNestedDefaults: true,
-      },
       options: {
         batchTransform: [
           {
@@ -1201,9 +1198,6 @@ describe('zodObjectBuilder', () => {
 
     const actual = zodObjectBuilder({
       schema,
-      config: {
-        preserveNestedDefaults: true,
-      },
       options: {
         batchTransform: [
           {
@@ -1345,9 +1339,6 @@ describe('zodObjectBuilder', () => {
 
     const orders = zodObjectBuilder({
       schema: orderSchemaMock,
-      config: {
-        preserveNestedDefaults: true,
-      },
       overrides: [
         {
           status: 'delivered',
@@ -1437,6 +1428,9 @@ describe('zodObjectBuilder', () => {
 
     const orders = zodObjectBuilder({
       schema: orderSchemaMock,
+      config: {
+        preserveNestedDefaults: false,
+      },
       overrides: [
         {
           status: 'delivered',
