@@ -1273,7 +1273,9 @@ describe('zodObjectBuilder', () => {
       state: z.string(),
       zipCode: z.string(),
       country: z.string(),
-    }).default({
+    })
+
+    const addressSchemaMock = addressSchema.default({
       street: '123 Pine Street',
       city: 'Portland',
       state: 'OR',
@@ -1284,19 +1286,24 @@ describe('zodObjectBuilder', () => {
     const customerInfoSchema = z.object({
       id: z.string().regex(/^CUST-\d{4}$/),
       name: z.string().min(1),
-      email: z.string().email(),
-      shippingAddress: addressSchema,
-    }).default({
+      email: z.email(),
+      shippingAddress: addressSchemaMock,
+    })
+
+    const customerInfoMock = customerInfoSchema.default({
       id: 'CUST-1234',
       name: 'Alice Johnson',
       email: 'alice.j@email.com',
+      shippingAddress: addressSchemaMock.parse(undefined),
     })
 
     const paymentInfoSchema = z.object({
       method: z.enum(['credit_card', 'paypal']),
       status: z.enum(['completed', 'pending', 'failed']),
       transactionId: z.string(),
-    }).default({
+    })
+
+    const paymentInfoMock = paymentInfoSchema.default({
       method: 'credit_card',
       status: 'pending',
       transactionId: 'TXN-88776655',
@@ -1311,7 +1318,9 @@ describe('zodObjectBuilder', () => {
       size: z.enum(['XS', 'S', 'M', 'L', 'XL', 'XXL']).optional(),
       variety: z.string().optional(),
       weight: z.enum(['8oz', '12oz', '16oz', '1lb']).optional(),
-    }).default({
+    })
+
+    const orderItemMock = orderItemSchema.default({
       productId: 'PROD-001',
       name: 'Sample Product',
       quantity: 1,
@@ -1320,12 +1329,12 @@ describe('zodObjectBuilder', () => {
       size: 'M',
     })
 
-    const orderSchema = z.object({
+    const orderSchemaMock = z.object({
       orderId: z.string().regex(/^ORD-\d{4}-\d{3}$/).default('ORD-2024-661'),
-      customerInfo: customerInfoSchema,
+      customerInfo: customerInfoMock,
       orderDate: z.string().default('11/11/1111'),
-      items: z.array(orderItemSchema).min(1).default([orderItemSchema.parse(undefined)]),
-      paymentInfo: paymentInfoSchema,
+      items: z.array(orderItemMock).min(1).default([orderItemMock.parse(undefined)]),
+      paymentInfo: paymentInfoMock,
       subtotal: z.number().positive().default(29.99),
       shippingCost: z.number().nonnegative().default(5.99),
       tax: z.number().nonnegative().default(3.00),
@@ -1335,7 +1344,7 @@ describe('zodObjectBuilder', () => {
     })
 
     const orders = zodObjectBuilder({
-      schema: orderSchema,
+      schema: orderSchemaMock,
       config: {
         preserveNestedDefaults: true,
       },
@@ -1349,14 +1358,16 @@ describe('zodObjectBuilder', () => {
 
     expect(orders).toStrictEqual([{ orderId: 'ORD-2024-661', customerInfo: { id: 'CUST-1234', name: 'Alice Johnson', email: 'alice.j@email.com', shippingAddress: { street: '123 Pine Street', city: 'Portland', state: 'OR', zipCode: '97201', country: 'USA' } }, orderDate: '11/11/1111', items: [{ productId: 'PROD-001', name: 'Sample Product', quantity: 1, pricePerUnit: 29.99, color: 'Black', size: 'L' }], paymentInfo: { method: 'credit_card', status: 'pending', transactionId: 'TXN-88776655' }, subtotal: 29.99, shippingCost: 5.99, tax: 3, totalAmount: 38.98, status: 'delivered', trackingNumber: '1Z999AA1234567890' }])
   })
-  test('it properly overrides nested array without preversing nested defaults', () => {
+  test('it properly overrides nested array without preserving nested defaults', () => {
     const addressSchema = z.object({
       street: z.string(),
       city: z.string(),
       state: z.string(),
       zipCode: z.string(),
       country: z.string(),
-    }).default({
+    })
+
+    const addressSchemaMock = addressSchema.default({
       street: '123 Pine Street',
       city: 'Portland',
       state: 'OR',
@@ -1368,18 +1379,23 @@ describe('zodObjectBuilder', () => {
       id: z.string().regex(/^CUST-\d{4}$/),
       name: z.string().min(1),
       email: z.string().email(),
-      shippingAddress: addressSchema,
-    }).default({
+      shippingAddress: addressSchemaMock,
+    })
+
+    const customerInfoMock = customerInfoSchema.default({
       id: 'CUST-1234',
       name: 'Alice Johnson',
       email: 'alice.j@email.com',
+      shippingAddress: addressSchemaMock.parse(undefined),
     })
 
     const paymentInfoSchema = z.object({
       method: z.enum(['credit_card', 'paypal']),
       status: z.enum(['completed', 'pending', 'failed']),
       transactionId: z.string(),
-    }).default({
+    })
+
+    const paymentInfoMock = paymentInfoSchema.default({
       method: 'credit_card',
       status: 'pending',
       transactionId: 'TXN-88776655',
@@ -1394,7 +1410,9 @@ describe('zodObjectBuilder', () => {
       size: z.enum(['XS', 'S', 'M', 'L', 'XL', 'XXL']).optional(),
       variety: z.string().optional(),
       weight: z.enum(['8oz', '12oz', '16oz', '1lb']).optional(),
-    }).default({
+    })
+
+    const orderItemMock = orderItemSchema.default({
       productId: 'PROD-001',
       name: 'Sample Product',
       quantity: 1,
@@ -1403,12 +1421,12 @@ describe('zodObjectBuilder', () => {
       size: 'M',
     })
 
-    const orderSchema = z.object({
+    const orderSchemaMock = z.object({
       orderId: z.string().regex(/^ORD-\d{4}-\d{3}$/).default('ORD-2024-661'),
-      customerInfo: customerInfoSchema,
+      customerInfo: customerInfoMock,
       orderDate: z.string().default('11/11/1111'),
-      items: z.array(orderItemSchema).min(1).default([orderItemSchema.parse(undefined)]),
-      paymentInfo: paymentInfoSchema,
+      items: z.array(orderItemMock).min(1).default([orderItemMock.parse(undefined)]),
+      paymentInfo: paymentInfoMock,
       subtotal: z.number().positive().default(29.99),
       shippingCost: z.number().nonnegative().default(5.99),
       tax: z.number().nonnegative().default(3.00),
@@ -1418,7 +1436,7 @@ describe('zodObjectBuilder', () => {
     })
 
     const orders = zodObjectBuilder({
-      schema: orderSchema,
+      schema: orderSchemaMock,
       overrides: [
         {
           status: 'delivered',

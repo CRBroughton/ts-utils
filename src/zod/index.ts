@@ -647,7 +647,7 @@ export function zodObjectBuilder<T extends SupportedZodSchema>({
         }
         else {
           const base = schema.parse({})
-          objects.push({ ...base, ...override })
+          objects.push({ ...base, ...override } as z.infer<T>)
         }
       })
 
@@ -721,7 +721,7 @@ export function zodObjectBuilder<T extends SupportedZodSchema>({
   const base = buildDefaultObject(schema)
 
   if (options.count && options.count > 0) {
-    const items = generateMocks(base, options.count, options)
+    const items = generateMocks(base, options.count, options as GenerateConfig<z.infer<T>>)
     if (options.afterGenerate)
       return options.afterGenerate(items)
 
@@ -745,7 +745,7 @@ export function zodObjectBuilder<T extends SupportedZodSchema>({
 export function buildDefaultObject<T extends SupportedZodSchema>(schema: T): z.infer<T> {
   // Handle ZodDefault by using its default value directly
   if (schema instanceof z.ZodDefault)
-    return schema.parse(undefined)
+    return schema.parse(undefined) as z.infer<T>
   // Handle regular ZodObject
   const zodObject = schema as z.ZodObject<ZodRawShape>
   const shape = zodObject.shape
@@ -758,7 +758,7 @@ export function buildDefaultObject<T extends SupportedZodSchema>(schema: T): z.i
     }
     else {
       try {
-        defaultBase[key] = field?.parse({})
+        defaultBase[key] = (field as z.ZodType)?.parse({})
       }
       catch {
         defaultBase[key] = undefined
@@ -766,7 +766,7 @@ export function buildDefaultObject<T extends SupportedZodSchema>(schema: T): z.i
     }
   }
 
-  return schema.parse(defaultBase)
+  return schema.parse(defaultBase) as z.infer<T>
 }
 
 /**
