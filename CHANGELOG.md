@@ -1,5 +1,16 @@
 # @crbroughton/ts-utils
 
+## 3.0.0
+
+### Major Changes
+
+- 9fcff00: update zod to 4.3.6
+- fbeda28: zodObjectBuilder preserveNestedDefaults now true by default
+
+### Patch Changes
+
+- 240f4d3: update zod to 3.25.76, update minor dev dependencies, update faker to 10.3.0
+
 ## 2.0.0
 
 ### Major Changes
