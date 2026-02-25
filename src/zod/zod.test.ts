@@ -248,17 +248,17 @@ describe('zodObjectBuilder with seperate default mock object', () => {
     expect(result).toStrictEqual(
       [{
         id: '0-default-id',
-        name: 'Edmond Lubowitz',
+        name: 'Daryl Reichel',
         email: 'john@email.com',
         role: 'user',
       }, {
         id: '2-default-id',
-        name: 'Myrtle Beier',
+        name: 'Jaime Deckow',
         email: 'john@email.com',
         role: 'user',
       }, {
         id: '1-default-id',
-        name: 'Vivian Kshlerin',
+        name: 'Jayden Heathcote',
         email: 'john@email.com',
         role: 'user',
       }],
